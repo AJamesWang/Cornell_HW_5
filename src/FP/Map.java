@@ -21,46 +21,45 @@ public class Map {
         villages = new MyList<Village>();
         roads = new MyList<Road>();
     }
+ 
+	//remove a village from MyList villages
+	//remove all the roads that went through the village
+	public void removeVillage(int id){
+		Village removeMe = villages.get(id);
+	
+		// remove roads out until you have no more. for each road out,
+		// you will need to remove the RoadOut entry for this Village,
+		// and the corresponding RoadIn entry for the Village on the
+		// destination end of the Road.
+		while (removeMe.getRoadsOut().getSize() > 0) {
+			Road roadOut = removeMe.getRoadsOut().get(0);
+			int destinationID = roadOut.getToID();
+			Village destination = villages.get(destinationID);
+			//remove road from destination village
+			destination.removeRoadIn(roadOut);
+			//remove from RemoveMe village
+			removeMe.removeRoadOut(roadOut);
+			roads.set_null(roadOut.getID());
+		}
+			
+		//do the same with roadIn's
+		while (removeMe.getRoadsIn().getSize() > 0) {
+			Road roadIn = removeMe.getRoadsIn().get(0);
+		    int fromID = roadIn.getFromID();
+			Village from = villages.get(fromID);
+			//remove road from fromVillage
+			from.removeRoadOut(roadIn);
+			//remove from RemoveMe Village
+			removeMe.removeRoadIn(roadIn);
+			roads.set_null(roadIn.getID());
+		}
 
-    // add a new village to villages. return an id
-    // that can be used to quickly access this village
-    public int addVillage(String name) {
-        Village newVillage = new Village(name);
-        villages.add(newVillage);
-        return newVillage.getID();
-    }
+		villages.set_null(id);
+			
+	}
 
-    // remove a village from MyList villages
-    // remove all the roads that went through the village
-    public void removeVillage(int id) {
-        Village removeMe = villages.get(id);
-        // iterate through villages that are connected to this village
-        // by roadsOut and remove the roads from their roadIn's
-        for (int i = 0; i < removeMe.getRoadsOut().getSize(); i++) {
-            Road roadOut = removeMe.getRoadsOut().get(i);
-            int destinationID = roadOut.getToID();
-            Village destination = villages.get(destinationID);
-            // remove road from destination village
-            destination.removeRoadIn(roadOut);
-            // remove from RemoveMe village
-            removeMe.removeRoadOut(roadOut);
-            roads.set_null(roadOut.getID());
-        }
-        
-        // do the same with roadIn's
-        for (int i = 0; i < removeMe.getRoadsIn().getSize(); i++) {
-            Road roadIn = removeMe.getRoadsIn().get(i);
-            int fromID = roadIn.getFromID();
-            Village from = villages.get(fromID);
-            // remove road from fromVillage
-            from.removeRoadOut(roadIn);
-            // remove from RemoveMe Village
-            removeMe.removeRoadIn(roadIn);
-            roads.set_null(roadIn.getID());
-        }
-        villages.set_null(id);
 
-    }
+
 
     // removes a village and any roads that went through the village
     // en route to other villages should be made direct
@@ -122,10 +121,10 @@ public class Map {
         }
     }
 
-    // tell how many nodes are in the graph
-    public int getVillageNum() {
-        return villages.getSize();
-    }
+	// tell the max village ID created so far.
+		public int getMaxVillageID() {
+			return villages.getSize() - 1;
+		}
 
     // get the Thing that has the given id
     public Village getVillage(int id) {
