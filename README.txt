@@ -4,7 +4,7 @@ Collaborators: Jimmy Wang (JLW424) and Austin Mack (AM2673)
 
 Organization of project:
 
-Part 1
+Part 1 - FINISHED (I think)
 -create weighted graph datastructure
     ~add/remove village
     ~add/remove/change road
@@ -16,7 +16,7 @@ Part 2
     ~search by ID, name, vip, colour
     ~create List history
     ~cur/goal destination
--More GUI
+-More GUI - JIMMY
     ~control gnomes
 
 Part 3
@@ -25,7 +25,7 @@ Part 3
     ~BFS
     ~time stop/starting
     ~complex road weights (multiple different weight types? Distance, Cost, Scenery, Safety)
--MST
+-MST - JIMMY
     ~Sounds like it uses Kruskal's algorithm
 
 Part 4
