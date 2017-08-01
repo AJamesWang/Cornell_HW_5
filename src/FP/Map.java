@@ -23,7 +23,10 @@ public class Map {
     private int nextRoadID = 0;
 	private int nextGnomeID = 0;
 
-    // construct an empty graph
+    
+	// construct an empty graph
+	//when you want to create a village, road, or a gnome, always do so by using add methods
+	// in this class
     public Map() {
         villages = new MyList<Village>();
         roads = new MyList<Road>();
