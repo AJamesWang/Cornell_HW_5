@@ -15,6 +15,11 @@ public class Map {
 
     private MyList<Village> villages; // all the nodes in the graph
     private MyList<Road> roads;
+  
+    // these are used to generate new unique IDs when
+    // a Road or Village is added to the Map
+    private int nextVillageID = 0;
+    private int nextRoadID = 0;
 
     // construct an empty graph
     public Map() {
@@ -22,6 +27,15 @@ public class Map {
         roads = new MyList<Road>();
     }
  
+    // add a new village to  villages. return an id
+    // that can be used to quickly access this village
+    public int addVillage(String name) {
+	Village newVillage= new Village(name, nextVillageID++);
+	villages.add(newVillage);
+	return newVillage.getID();
+	}
+	
+	
 	//remove a village from MyList villages
 	//remove all the roads that went through the village
 	public void removeVillage(int id){
@@ -91,13 +105,13 @@ public class Map {
     // from one village to the other. villages are
     // specified by id#
     public int addRoad(int from, int to, int weight) throws ArrayIndexOutOfBoundsException {
-        Road newRoad = new Road(from, to, weight);
-
-        villages.get(from).addRoadOut(newRoad);
-        villages.get(to).addRoadIn(newRoad);
-        roads.add(newRoad);
-        return newRoad.getID();
-    }
+	Road newRoad = new Road(from, to, weight, nextRoadID++);
+			
+	villages.get(from).addRoadOut(newRoad);
+	villages.get(to).addRoadIn(newRoad);
+	roads.add(newRoad);
+	return newRoad.getID();
+		}
 
     // @modified added this method
     public boolean removeRoad(int from, int to) {
@@ -140,4 +154,120 @@ public class Map {
     public int nConnections(int id) throws ArrayIndexOutOfBoundsException {
         return villages.get(id).getRoadsOut().getSize();
     }
+}
+
+// This implements Dijkstra's algorithm to find the shortest path
+		// from one Village to another in our Map.
+		// It returns a MyList of the Roads that make up that path.
+		// Returns null if there is one or 0 Villages in the Map.
+		// Also returns null if from == to.
+		//
+		public MyList<Road> shortestPath(Village from, Village to) {
+			// just return null for stupid cases
+			if (villages.getSize() < 2 || from == to) {
+				return null;
+			}
+			
+			// this will contain the roads that constitute the
+			// shortest path. we will return this at the end.
+			MyList<Road> theShortestPath = new MyList<Road>();
+			
+			// settled nodes. don't care about order here, so use MyList
+			MyList<Village> settledNodes = new MyList<Village>();
+			
+			// unsettled nodes. we do care about order here. we want to get 
+			// the lowest distance one first. 
+			// We are using our RankedQueue class from a previous
+			// homework, but it ranks things highest first, so there's some
+			// goofiness to make that work. RankedQueue is used elsewhere in
+			// normal "highest value first" setup, so didn't want to rewrite
+			// it to be lowest value first.
+			RankedQueue<Village> unsettledNodes = new RankedQueue<Village>();
+			
+			// we also need to keep track of the min known distance to every node
+			// and a predecessor node for every node. Initialize them here with
+			// infinity and null respectively. For our purposes, instead of 
+			// storing the predecessors as nodes, we are going to store the
+			// edge/road that brought you there. This is because in the end,
+			// we want to return a list of Roads that comprise the shortest
+			// path.
+			MyList<Integer> distances = new MyList<Integer>(villages.getSize());
+			MyList<Road> predecessors = new MyList<Road>(villages.getSize());
+			for (int i = 0; i < villages.getSize(); i++) {
+				distances.add(Integer.MAX_VALUE);
+				predecessors.add(null);
+			}
+			
+			// before starting, set distance to the "from" Village to be 0 duh.
+			distances.set(from.getID(), 0);
+			
+			// now put the starting point Village into our unsettled nodes.
+			unsettledNodes.add(from, 0);
+			
+			// now we grind through this until we have no more unsettled nodes
+			while (unsettledNodes.getSize() > 0) {
+				Village evaluateThis = unsettledNodes.remove();
+				int distanceToEvaluationNode = distances.get(evaluateThis.getID());
+				
+				// loop through the evaluation node's direct connections
+				MyList<Road> roadsOut = evaluateThis.getRoadsOut();
+				for (int i = 0; i < roadsOut.getSize(); i++) {
+					Road thisRoad = roadsOut.get(i);
+					int destID = thisRoad.getToID();
+					int edgeDistance = thisRoad.getWeight();
+					int minKnownDistance = distances.get(destID);
+					
+					// if we have found a new shortest path to this destination,
+					// update the best distance for this destination, note the
+					// predecessor node that corresponds to that distance,
+					// and add this destination to the unsettled nodes queue.
+					if (distanceToEvaluationNode  + edgeDistance < minKnownDistance) {
+						distances.set(destID, distanceToEvaluationNode + edgeDistance);
+						predecessors.set(destID, thisRoad);
+						// here's the goofy math bit. since our prioritized queue gives highest
+						// ranked item first, we use minus distance as the rank, so lowest
+						// distance comes out first. confusing, but it works.
+						unsettledNodes.add(villages.get(destID), -distances.get(destID));
+					}
+					
+				}
+				// now we've evaluated all edges leading out of the evaluation node.
+				// add the evaluation node to the list of settled nodes and repeat
+				settledNodes.add(evaluateThis);
+				
+			}
+			
+			// now we have evaluated all the nodes we can get to from the start node.
+			// it's possible that there is no path from the from node to the to node.
+			// that would be indicated by the to node's distance being MAX_VALUE.
+			// for now we'll return a null if that happened.
+			if (distances.get(to.getID()) == Integer.MAX_VALUE) {
+				return null;
+			} else {
+				// so if we did find a path to the "to" node, we need to 
+				// reconstruct the full path by working backwards through the
+				// predecessor values. crazy talk!
+				MyList<Road> backwardsPath = new MyList<Road>();
+				Village currentNode = to;
+				
+				// starting from the destination node, we work backwards
+				// through the previous values until we get to the from
+				// node. This will accumulate the shortest path in reverse
+				// order.
+				while (currentNode != from) {
+					Road predecessor = predecessors.get(currentNode.getID());
+					backwardsPath.add(predecessor);
+					currentNode = villages.get(predecessor.getFromID());
+				}
+				
+				// now we have all the roads that make up the shortest
+				// path, but in reverse order. return them in the correct
+				// order.
+				for (int i = backwardsPath.getSize() - 1; i >= 0; i--) {
+					theShortestPath.add(backwardsPath.get(i));
+				}
+			}
+			
+			return theShortestPath;
+		}
 }
