@@ -28,7 +28,7 @@ public class Village {
 
     @Override
     public String toString() {
-        return this.name;
+        return this.name+" ("+this.id+")";
     }
     
     private String name;

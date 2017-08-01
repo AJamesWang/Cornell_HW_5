@@ -13,13 +13,16 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.HashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 
 import datastructures.LinkedList;
 import datastructures.Tuple;
@@ -56,13 +59,15 @@ public class MapGUI extends JFrame {
     class MapPanel extends JPanel {
         // button and associated village
         LinkedList<Tuple<JButton, Village>> villages;
+        HashMap<Village, LinkedList<Gnome>> villageGnomes;
+        HashMap<Road, LinkedList<Gnome>> roadGnomes;
 
         public MapPanel() {
             super();
             setLayout(null);
             this.villages = new LinkedList<Tuple<JButton, Village>>();
-            makeVillages();
             addKeyListener(listener);
+            refreshVillages();
         }
 
         public void refreshVillages() {
@@ -72,6 +77,7 @@ public class MapGUI extends JFrame {
             }
             villages = new LinkedList<Tuple<JButton, Village>>();
             makeVillages();
+            updateGnomes();
             repaint();
         }
 
@@ -101,6 +107,37 @@ public class MapGUI extends JFrame {
                 }
             }
 
+        }
+
+        protected void updateGnomes() {
+            MyList<Gnome> gnomes = map.getGnomes();
+            villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
+            roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
+            for (int i = 0; i < gnomes.getSize(); i++) {
+                Gnome gnome = gnomes.get(i);
+                if (gnome == null)
+                    continue;
+
+                if (gnome.getCurrentVillage() != null) {
+                    Village village = gnome.getCurrentVillage();
+                    if (villageGnomes.get(village) == null) {
+                        LinkedList<Gnome> occupants = new LinkedList<Gnome>();
+                        occupants.add(gnome);
+                        villageGnomes.put(village, occupants);
+                    } else {
+                        villageGnomes.get(village).add(gnome);
+                    }
+                } else if (gnome.getCurrentRoad() != null) {
+                    Road road = gnome.getCurrentRoad();
+                    if (roadGnomes.get(road) == null) {
+                        LinkedList<Gnome> travellers = new LinkedList<Gnome>();
+                        travellers.add(gnome);
+                        roadGnomes.put(road, travellers);
+                    } else {
+                        roadGnomes.get(road).add(gnome);
+                    }
+                }
+            }
         }
 
         @Override
@@ -145,17 +182,30 @@ public class MapGUI extends JFrame {
             }
         }
 
-        protected void paintGnomes(Graphics g) {
-            MyList<Gnome> gnomes=map.getGnomes();
+        private void paintGnomes(Graphics g) {
+            for (Village village : villageGnomes.keySet()) {
+                LinkedList<Gnome> gnomes = villageGnomes.get(village);
+                int gnomeCount = gnomes.getLength();
+                // max size=6, min size=2
+                int size = Math.max(Gnome.MIN_SIZE, Math.min(Gnome.MAX_SIZE, Village.DIAMETER / gnomeCount));
+                int x = village.getX();
+                int y = village.getY() + Village.DIAMETER;
+                for (int i = 0; i < gnomeCount; i++) {
+                    g.setColor(gnomes.get(i).getFavColor());
+                    g.fillRect(x, y, size, size);
+                    x += size;
+                }
+            }
         }
-        
+
         @Override
         // not in paintComponent b/c I want to paint over the buttons
         protected void paintChildren(Graphics g) {
             super.paintChildren(g);
             paintRoads(g);
+            paintGnomes(g);
         }
-        
+
         public Village getVillage(JButton button) {
             Tuple<JButton, Village> shell = new Tuple<JButton, Village>(button, null);
             return villages.get(villages.getIndex(shell)).getB();
@@ -170,7 +220,7 @@ public class MapGUI extends JFrame {
 
         public ButtonPanel() {
             super();
-            setLayout(new GridLayout());
+            setLayout(new GridLayout(0, 4));
 
             addVillage = new JButton("Add Village (q)");
             addVillage.addActionListener(listener);
@@ -192,20 +242,8 @@ public class MapGUI extends JFrame {
         }
     }
 
-    class Listener implements ActionListener, MouseListener, KeyListener {
-        private static final int NEUTRAL = 0;
-        private static final int ADD_VILLAGE = 11;
-        private static final int DEL_VILLAGE = 21;
-        private static final int ADD_ROAD = 12;
-        private static final int DEL_ROAD = 22;
-
-        int state;
-        Village prev;
-
-        public Listener() {
-            this.state = NEUTRAL;
-            this.prev = null;
-        }
+    // @todo: is JOptionPane a necessary extension?
+    class VillageInfoPane extends JFrame {
 
         private LinkedList<Village> extractVillages(LinkedList<Road> roads, boolean in) {
             LinkedList<Village> villages = new LinkedList<Village>();
@@ -219,7 +257,10 @@ public class MapGUI extends JFrame {
             return villages;
         }
 
-        private void showVillageInfo(ActionEvent e) {
+        public VillageInfoPane(ActionEvent e) {
+            this.setLayout(new GridLayout());
+            this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
             Village village = mapPanel.getVillage((JButton) e.getSource());
             String name = village.getName();
             int id = village.getID();
@@ -227,13 +268,52 @@ public class MapGUI extends JFrame {
             LinkedList<Village> in = extractVillages(roadsIn, true);
             LinkedList<Road> roadsOut = convertMyList(village.getRoadsOut());
             LinkedList<Village> out = extractVillages(roadsOut, false);
-            String format = "Village Name:\t%s\nVillage ID:\t %s\nInbound Roads From:\n\t%s\nOutbound Roads To:\n\t%s";
-            ImageIcon icon = new ImageIcon("village.jpg");
 
-            String message = String.format(format, name, id, in.toString(), out.toString());
-            JOptionPane.showMessageDialog(mapGUI, message, "Village Info", JOptionPane.PLAIN_MESSAGE, icon);
+            JPanel panel=new JPanel();
+            panel.setLayout(new GridLayout(0,1));
+            panel.setBorder(new EmptyBorder(10,10,10,10));
+            
+            JLabel nameLabel = new JLabel("Village: " + name);
+            panel.add(nameLabel);
+            JLabel idLabel = new JLabel("ID: " + id);
+            panel.add(idLabel);
 
-            mapPanel.refreshVillages();
+            JLabel roadsInTitle = new JLabel("Inbound roads from: ");
+            panel.add(roadsInTitle);
+            JLabel roadsInData = new JLabel("\t" + in.toString());
+            panel.add(roadsInData);
+            JLabel roadsOutTitle = new JLabel("Outbound roads to: ");
+            panel.add(roadsOutTitle);
+            JLabel roadsOutData = new JLabel("\t" + out.toString());
+            panel.add(roadsOutData);
+
+            //@todo: expand window if there are many connected roads
+            panel.setVisible(true);
+            this.add(panel);
+            
+            this.setSize(300, 300);
+            this.setLocation(mapGUI.getX() + village.getX(), mapGUI.getY() + village.getY());
+            this.setVisible(true);
+        }
+    }
+
+    class Listener implements ActionListener, MouseListener, KeyListener {
+        private static final int NEUTRAL = 0;
+        private static final int ADD_VILLAGE = 11;
+        private static final int DEL_VILLAGE = 21;
+        private static final int ADD_ROAD = 12;
+        private static final int DEL_ROAD = 22;
+
+        int state;
+        Village prev;
+
+        private boolean roadInfoShown;
+
+        public Listener() {
+            this.state = NEUTRAL;
+            this.prev = null;
+
+            roadInfoShown = false;
         }
 
         private void delVillage(ActionEvent e) {
@@ -259,8 +339,7 @@ public class MapGUI extends JFrame {
                     JOptionPane.showMessageDialog(mapGUI, "That would be a pointless road", "Foolish Mortal",
                                     JOptionPane.WARNING_MESSAGE);
                 } else {
-                    int weight = Integer
-                                    .parseInt(JOptionPane.showInputDialog(mapGUI, "How much is the toll?"));
+                    int weight = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "How much is the toll?"));
                     map.addRoad(prev.getID(), next.getID(), weight);
                 }
                 prev = null;
@@ -282,6 +361,15 @@ public class MapGUI extends JFrame {
                 state = NEUTRAL;
             }
             mapPanel.refreshVillages();
+        }
+
+        private void showVillageInfo(ActionEvent e) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    new VillageInfoPane(e);
+                }
+            });
         }
 
         @Override
@@ -327,12 +415,20 @@ public class MapGUI extends JFrame {
 
         @Override
         public void mousePressed(MouseEvent e) {
-            if (state != ADD_VILLAGE)
+            if (!roadInfoShown && state == DEL_ROAD) {
+                JOptionPane.showMessageDialog(mapGUI,
+                                "To delete a road:\nFirst select the village it is leaving.\nThen, select the village it is heading towards.",
+                                "Foolish Mortal", JOptionPane.PLAIN_MESSAGE);
+                roadInfoShown = true;
+                return;
+            } else if (state != ADD_VILLAGE)
                 return;
             String name = JOptionPane.showInputDialog(mapGUI, "What would you like to name the village?");
             int id = map.addVillage(name);
-            map.getVillage(id).setX(e.getX());
-            map.getVillage(id).setY(e.getY());
+            // don't know why coors have inconsistent offsets
+            // so village stays centered(ish) on mouse
+            map.getVillage(id).setX(e.getX() - Village.DIAMETER / 2);
+            map.getVillage(id).setY(e.getY() - Village.DIAMETER);
             mapPanel.refreshVillages();
             state = NEUTRAL;
             repaint();

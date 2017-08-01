@@ -1,5 +1,7 @@
 package FP;
 
+import java.awt.Color;
+
 public class Map {
     /* GUI */
     public static int DEFAULT_WIDTH = 600;
@@ -113,7 +115,7 @@ public class Map {
     }
 
     // adds a new Gnome and returns its ID
-    public int addGnome(String theName, String theFavColor, int theVIPLevel) {
+    public int addGnome(String theName, Color theFavColor, int theVIPLevel) {
         Gnome newGnome = new Gnome(theName, theFavColor, theVIPLevel, nextGnomeID++);
         gnomes.add(newGnome);
         return newGnome.getID();

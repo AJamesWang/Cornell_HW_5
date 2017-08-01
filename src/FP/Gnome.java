@@ -1,14 +1,21 @@
 package FP;
 
+import java.awt.Color;
+
 // class for basic info about a Gnome.
 // we keep track of what village it's in, or what road it's on.
 // a new Gnome is neither in a village nor on a road when created, but
 // When traveling, will be either in a village OR on a road. If the Gnome
 // is currently in a Village, onRoad will be null, and vice-versa.
 public class Gnome {
+    /*GUI*/
+    public static int MAX_SIZE=6;
+    public static int MIN_SIZE=2;
+    
+    /*datastructure*/
     private int id;
     private String name;
-    private String favColor;
+    private Color favColor; //@modified changed color from String to Color object
     private int vipLevel; // 0 for commoners, higher values for fancier people
     private Village inVillage; // village he's in, or null if not in a village
     private Road onRoad; // Road he's on, or null if not on a road
@@ -16,7 +23,7 @@ public class Gnome {
     
 
     // normal case constructor
-    public Gnome(String theName, String theFavColor, int theVIPLevel, int theID) {
+    public Gnome(String theName, Color theFavColor, int theVIPLevel, int theID) {
         this.id= theID;
         this.name = theName;
         this.favColor = theFavColor;
@@ -34,7 +41,7 @@ public class Gnome {
         return this.name;
     }
     
-    public String getFavColor() {
+    public Color getFavColor() {
         return this.favColor;
     }
     
