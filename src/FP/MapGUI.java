@@ -13,12 +13,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -105,6 +103,7 @@ public class MapGUI extends JFrame {
 
         }
 
+        @Override
         public Dimension getPreferredSize() {
             return new Dimension(Map.DEFAULT_WIDTH, Map.DEFAULT_HEIGHT);
         }
@@ -146,14 +145,17 @@ public class MapGUI extends JFrame {
             }
         }
 
-        // @todo: decide whether to keep or no
+        protected void paintGnomes(Graphics g) {
+            MyList<Gnome> gnomes=map.getGnomes();
+        }
+        
         @Override
         // not in paintComponent b/c I want to paint over the buttons
         protected void paintChildren(Graphics g) {
             super.paintChildren(g);
             paintRoads(g);
         }
-
+        
         public Village getVillage(JButton button) {
             Tuple<JButton, Village> shell = new Tuple<JButton, Village>(button, null);
             return villages.get(villages.getIndex(shell)).getB();
@@ -258,7 +260,7 @@ public class MapGUI extends JFrame {
                                     JOptionPane.WARNING_MESSAGE);
                 } else {
                     int weight = Integer
-                                    .parseInt((String) JOptionPane.showInputDialog(mapGUI, "How much is the toll?"));
+                                    .parseInt(JOptionPane.showInputDialog(mapGUI, "How much is the toll?"));
                     map.addRoad(prev.getID(), next.getID(), weight);
                 }
                 prev = null;
@@ -327,7 +329,7 @@ public class MapGUI extends JFrame {
         public void mousePressed(MouseEvent e) {
             if (state != ADD_VILLAGE)
                 return;
-            String name = (String) JOptionPane.showInputDialog(mapGUI, "What would you like to name the village?");
+            String name = JOptionPane.showInputDialog(mapGUI, "What would you like to name the village?");
             int id = map.addVillage(name);
             map.getVillage(id).setX(e.getX());
             map.getVillage(id).setY(e.getY());
@@ -403,6 +405,7 @@ public class MapGUI extends JFrame {
         Map map = new Map();
 
         SwingUtilities.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 new MapGUI(map);
             }

@@ -19,6 +19,7 @@ public class LinkedList<T> /* implements */ /* Queue<T>, List<T>, Iterable<T> */
         return this.length;
     }
 
+    @Override
     public String toString() {
         String out = "";
         ListNode<T> cur = head.getNext();

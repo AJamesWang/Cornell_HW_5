@@ -43,11 +43,13 @@ public class Tuple<A, B> {
         }
     }
 
+    @Override
     public boolean equals(Object o) {
         return o.getClass() == this.getClass() && this.equals((Tuple<A, B>) o);
 
     }
 
+    @Override
     public String toString() {
         return this.a.toString() + ":" + this.b.toString();
     }
