@@ -165,6 +165,10 @@ public class Map {
     public Road getRoad(int id) {
         return roads.get(id);
     }
+	
+	public Gnome getGnome(int id){
+		return gnomes.get(id);
+	}
 
     // tell how many outgoing edges the given node has.
     // node is specified by id# given when added to graph.
