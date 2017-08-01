@@ -66,25 +66,22 @@ public class Village {
         return roadsIn;
     }
 
-    // removes the road form roadsOut with the given id
-    //@modified: replaced remove w/ set_null, was causing bugs when removing villages
-    //@modified: now checks if roads.get(i) is null
-    public void removeRoadOut(Road removeMe) {
-        for (int i = 0; i < roadsOut.getSize(); i++) {
-            if (roadsOut.get(i)!=null && roadsOut.get(i).equals(removeMe)) {
-                roadsOut.set_null(i);
-            }
-        }
-    }
+	public void removeRoadOut(Road removeMe) {
+		for (int i=0; i<roadsOut.getSize(); i++) {
+			if (roadsOut.get(i).equals(removeMe) ){
+				roadsOut.remove(i);
+			}
+		}
+	}
 
-    public void removeRoadIn(Road removeMe) {
-        for (int i = 0; i < roadsIn.getSize(); i++) {
-            if (roadsIn.get(i)!=null && roadsIn.get(i).equals(removeMe)) {
-                roadsIn.set_null(i);
-            }
-        }
+	public void removeRoadIn(Road removeMe) {
+		for (int i=0; i<roadsIn.getSize(); i++) {
+			if (roadsIn.get(i).equals(removeMe) ){
+				roadsIn.remove(i);
+			}
+		}
 
-    }
+	}
 
     public int getID() {
         return id;
