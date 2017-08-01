@@ -12,6 +12,10 @@ public class Map {
     public MyList<Road> getRoads() {
         return this.roads;
     }
+	
+	public MyList<Gnome> getGnomes(){
+		return this.gnomes;
+	}
 
     private MyList<Village> villages; // all the nodes in the graph
     private MyList<Road> roads;
