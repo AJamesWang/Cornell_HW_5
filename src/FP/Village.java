@@ -34,18 +34,16 @@ public class Village {
     private MyList<Road> roadsOut;
     private MyList<Road> roadsIn;
     private int id;
-    private static int NextID = 0;
     private int capacity;
     private int currentPop;
 
-    public Village(String name) {
+    public Village(String name, int theID) {
         this.name = name;
         this.roadsOut = new MyList<Road>();
         this.roadsIn = new MyList<Road>();
-        this.id = NextID;
+        this.id = theID;
         this.currentPop = 0;
         this.capacity = 2;
-        NextID++;
     }
 
     public void addRoadOut(Road newRoad) {
