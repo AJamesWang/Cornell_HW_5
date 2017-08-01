@@ -15,16 +15,19 @@ public class Map {
 
     private MyList<Village> villages; // all the nodes in the graph
     private MyList<Road> roads;
+	private MyList<Gnome> gnomes;
   
     // these are used to generate new unique IDs when
     // a Road or Village is added to the Map
     private int nextVillageID = 0;
     private int nextRoadID = 0;
+	private int nextGnomeID = 0;
 
     // construct an empty graph
     public Map() {
         villages = new MyList<Village>();
         roads = new MyList<Road>();
+		gnomes = new MyList<Gnome>();
     }
  
     // add a new village to  villages. return an id
@@ -100,6 +103,13 @@ public class Map {
         // now delete all the old roads and removeMe
         removeVillage(id);
     }
+	
+	//adds a new Gnome and returns its ID
+	public int addGnome(String theName, String theFavColor, int theVIPLevel){
+		Gnome newGnome = new Gnome(theName, theFavColor, theVIPLevel, nextGnomeID++);
+		gnomes.add(newGnome);
+		return newGnome.getID();
+	}
 
     // add a road with the given weight and return its id
     // from one village to the other. villages are
