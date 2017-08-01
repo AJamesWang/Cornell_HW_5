@@ -15,7 +15,6 @@ public class Road {
         this.id = theID;
         this.currentPop = 0;
         this.capacity=2;
-        NextID++;
     }
     
     public int getFromID() {
