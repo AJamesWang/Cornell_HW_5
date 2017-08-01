@@ -33,9 +33,9 @@ public class Map {
     // add a new village to  villages. return an id
     // that can be used to quickly access this village
     public int addVillage(String name) {
-	Village newVillage= new Village(name, nextVillageID++);
-	villages.add(newVillage);
-	return newVillage.getID();
+		Village newVillage= new Village(name, nextVillageID++);
+		villages.add(newVillage);
+		return newVillage.getID();
 	}
 	
 	
@@ -115,12 +115,12 @@ public class Map {
     // from one village to the other. villages are
     // specified by id#
     public int addRoad(int from, int to, int weight) throws ArrayIndexOutOfBoundsException {
-	Road newRoad = new Road(from, to, weight, nextRoadID++);
+		Road newRoad = new Road(from, to, weight, nextRoadID++);
 			
-	villages.get(from).addRoadOut(newRoad);
-	villages.get(to).addRoadIn(newRoad);
-	roads.add(newRoad);
-	return newRoad.getID();
+		villages.get(from).addRoadOut(newRoad);
+		villages.get(to).addRoadIn(newRoad);
+		roads.add(newRoad);
+		return newRoad.getID();
 		}
 
     // @modified added this method
@@ -146,8 +146,8 @@ public class Map {
     }
 
 	// tell the max village ID created so far.
-		public int getMaxVillageID() {
-			return villages.getSize() - 1;
+	public int getMaxVillageID() {
+		return villages.getSize() - 1;
 		}
 
     // get the Thing that has the given id
@@ -166,13 +166,7 @@ public class Map {
     }
 }
 
-// This implements Dijkstra's algorithm to find the shortest path
-		// from one Village to another in our Map.
-		// It returns a MyList of the Roads that make up that path.
-		// Returns null if there is one or 0 Villages in the Map.
-		// Also returns null if from == to.
-		//
-		public MyList<Road> shortestPath(Village from, Village to) {
+public MyList<Road> shortestPath(Village from, Village to) {
 			// just return null for stupid cases
 			if (villages.getSize() < 2 || from == to) {
 				return null;
