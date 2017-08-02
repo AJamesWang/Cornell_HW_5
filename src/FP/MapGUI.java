@@ -117,6 +117,7 @@ public class MapGUI extends JFrame {
             MyList<Gnome> gnomes = map.getGnomes();
             villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
             roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
+            //fills maps w/ empty lists tagged w/ every road
             for (int i = 0; i < villages.getLength(); i++) {
                 villageGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
             }
@@ -126,6 +127,7 @@ public class MapGUI extends JFrame {
                     roadGnomes.put(road, new LinkedList<Gnome>());
                 }
             }
+            //tags every gnome w/ village or road, puts in respective map
             for (int i = 0; i < gnomes.getSize(); i++) {
                 Gnome gnome = gnomes.get(i);
                 if (gnome == null)
@@ -245,7 +247,6 @@ public class MapGUI extends JFrame {
         }
     }
 
-    // @todo: is JOptionPane a necessary extension?
     class VillageInfoPanel extends JPanel {
         Village village;
         InfoPanel info;
@@ -282,6 +283,7 @@ public class MapGUI extends JFrame {
             this.setVisible(true);
         }
 
+        //@todo: refresh infopanel whenever new gnome is added
         class InfoPanel extends JPanel {
             public InfoPanel(Village village) {
 
@@ -354,7 +356,7 @@ public class MapGUI extends JFrame {
 
         class VillageListener implements ActionListener {
 
-            // name, ID, colour, VIP level
+            // name, colour, VIP level, ID
             private Object[] promptGnomeInfo(Gnome gnome) {
                 if (gnome == null) {
                     gnome = new Gnome("", null, 0, -1);
@@ -366,38 +368,38 @@ public class MapGUI extends JFrame {
                 JTextField name = new JTextField(gnome.getName());
                 {
                     JLabel nameLabel = new JLabel("Name: ");
-                    
+
                     panel.add(nameLabel);
                     panel.add(name);
                 }
 
-                JButton color=new JButton();
+                JButton color = new JButton();
                 {
                     // @todo: make this a list?
                     JLabel colorLabel = new JLabel("Favorite Color: ");
                     panel.add(colorLabel);
-                    
+
                     color.setOpaque(true);
                     color.setBorderPainted(false);
                     color.setBackground(gnome.getFavColor() == null ? Color.blue : gnome.getFavColor());
                     color.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            //@todo: remove all the "sample text" from colorChooser
-                            Color newColor=JColorChooser.showDialog(color, "Favorite Color", color.getBackground());
+                            // @todo: remove all the "sample text" from colorChooser
+                            Color newColor = JColorChooser.showDialog(color, "Favorite Color", color.getBackground());
                             color.setBackground(newColor);
                         }
-                        
+
                     });
                     panel.add(color);
-                    
+
                 }
 
                 JSpinner vip = new JSpinner();
                 {
                     JLabel vipLabel = new JLabel("VIP status: ");
                     panel.add(vipLabel);
-                    
+
                     SpinnerNumberModel vipModel = new SpinnerNumberModel();
                     vipModel.setMinimum(0);
                     vipModel.setValue(gnome.getVIPLevel());
@@ -406,10 +408,10 @@ public class MapGUI extends JFrame {
                 }
 
                 JSpinner id = new JSpinner();
-                if(gnome.getID()!=-1){
+                if (gnome.getID() != -1) {
                     JLabel idLabel = new JLabel("ID: ");
                     panel.add(idLabel);
-                    
+
                     SpinnerNumberModel idModel = new SpinnerNumberModel();
                     idModel.setMinimum(0);
                     idModel.setValue(gnome.getID());
@@ -422,9 +424,9 @@ public class MapGUI extends JFrame {
                 if (result == JOptionPane.YES_OPTION) {
                     Object[] out = new Object[4];
                     out[0] = name.getText();
-                    out[1] = id.getValue();
-                    out[2] = color.getBackground();
-                    out[3] = vip.getValue();
+                    out[1] = color.getBackground();
+                    out[2] = vip.getValue();
+                    out[3] = id.getValue();
 
                     return out;
                 } else {
@@ -437,6 +439,9 @@ public class MapGUI extends JFrame {
                 if (data == null)
                     return;
 
+                int id=map.addGnome((String) data[0], (Color) data[1], (Integer) data[2]);
+                map.getGnome(id).setCurrentVillage(village);
+                mapPanel.refreshVillages();
             }
 
             @Override
