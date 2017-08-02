@@ -39,7 +39,7 @@ public class Village {
     private int currentPop;
 
     public Village(String name, int theID) {
-        this.name = name;
+        this.name = name.length()==0?"Unnamed":name;
         this.roadsOut = new MyList<Road>();
         this.roadsIn = new MyList<Road>();
         this.id = theID;

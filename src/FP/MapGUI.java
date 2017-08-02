@@ -17,10 +17,14 @@ import java.util.HashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 
@@ -32,16 +36,16 @@ public class MapGUI extends JFrame {
     MapGUI mapGUI;
     Map map;
     MapPanel mapPanel;
-    ButtonPanel buttonPanel;
-    Listener listener;
+    MapButtonPanel buttonPanel;
+    MapListener mapListener;
 
     public MapGUI(Map map) {
         super("Main Frame");
         this.mapGUI = this;
         this.map = map;
-        this.listener = new Listener();
-        addMouseListener(listener);
-        addKeyListener(listener);
+        this.mapListener = new MapListener();
+        addMouseListener(mapListener);
+        addKeyListener(mapListener);
 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
@@ -49,7 +53,7 @@ public class MapGUI extends JFrame {
         this.mapPanel = new MapPanel();
         this.add(mapPanel, BorderLayout.CENTER);
 
-        this.buttonPanel = new ButtonPanel();
+        this.buttonPanel = new MapButtonPanel();
         this.add(buttonPanel, BorderLayout.SOUTH);
 
         this.pack();
@@ -66,7 +70,7 @@ public class MapGUI extends JFrame {
             super();
             setLayout(null);
             this.villages = new LinkedList<Tuple<JButton, Village>>();
-            addKeyListener(listener);
+            addKeyListener(mapListener);
             refreshVillages();
         }
 
@@ -90,8 +94,8 @@ public class MapGUI extends JFrame {
             out.setFocusPainted(false);
 
             out.setBounds(village.getX(), village.getY(), icon.getIconWidth(), icon.getIconHeight());
-            out.addActionListener(listener);
-            out.addKeyListener(listener);
+            out.addActionListener(mapListener);
+            out.addKeyListener(mapListener);
             return out;
         }
 
@@ -113,6 +117,15 @@ public class MapGUI extends JFrame {
             MyList<Gnome> gnomes = map.getGnomes();
             villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
             roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
+            for (int i = 0; i < villages.getLength(); i++) {
+                villageGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
+            }
+            for (int i = 0; i < map.getRoads().getSize(); i++) {
+                Road road = map.getRoad(i);
+                if (road != null) {
+                    roadGnomes.put(road, new LinkedList<Gnome>());
+                }
+            }
             for (int i = 0; i < gnomes.getSize(); i++) {
                 Gnome gnome = gnomes.get(i);
                 if (gnome == null)
@@ -120,22 +133,10 @@ public class MapGUI extends JFrame {
 
                 if (gnome.getCurrentVillage() != null) {
                     Village village = gnome.getCurrentVillage();
-                    if (villageGnomes.get(village) == null) {
-                        LinkedList<Gnome> occupants = new LinkedList<Gnome>();
-                        occupants.add(gnome);
-                        villageGnomes.put(village, occupants);
-                    } else {
-                        villageGnomes.get(village).add(gnome);
-                    }
+                    villageGnomes.get(village).add(gnome);
                 } else if (gnome.getCurrentRoad() != null) {
                     Road road = gnome.getCurrentRoad();
-                    if (roadGnomes.get(road) == null) {
-                        LinkedList<Gnome> travellers = new LinkedList<Gnome>();
-                        travellers.add(gnome);
-                        roadGnomes.put(road, travellers);
-                    } else {
-                        roadGnomes.get(road).add(gnome);
-                    }
+                    roadGnomes.get(road).add(gnome);
                 }
             }
         }
@@ -186,14 +187,16 @@ public class MapGUI extends JFrame {
             for (Village village : villageGnomes.keySet()) {
                 LinkedList<Gnome> gnomes = villageGnomes.get(village);
                 int gnomeCount = gnomes.getLength();
-                // max size=6, min size=2
-                int size = Math.max(Gnome.MIN_SIZE, Math.min(Gnome.MAX_SIZE, Village.DIAMETER / gnomeCount));
-                int x = village.getX();
-                int y = village.getY() + Village.DIAMETER;
-                for (int i = 0; i < gnomeCount; i++) {
-                    g.setColor(gnomes.get(i).getFavColor());
-                    g.fillRect(x, y, size, size);
-                    x += size;
+                if (gnomeCount > 0) {
+                    // max size=6, min size=2
+                    int size = Math.max(Gnome.MIN_SIZE, Math.min(Gnome.MAX_SIZE, Village.DIAMETER / gnomeCount));
+                    int x = village.getX();
+                    int y = village.getY() + Village.DIAMETER;
+                    for (int i = 0; i < gnomeCount; i++) {
+                        g.setColor(gnomes.get(i).getFavColor());
+                        g.fillRect(x, y, size, size);
+                        x += size;
+                    }
                 }
             }
         }
@@ -212,38 +215,42 @@ public class MapGUI extends JFrame {
         }
     }
 
-    class ButtonPanel extends JButton {
+    class MapButtonPanel extends JButton {
         JButton addVillage;
         JButton delVillage;
         JButton addRoad;
         JButton delRoad;
 
-        public ButtonPanel() {
+        public MapButtonPanel() {
             super();
             setLayout(new GridLayout(0, 4));
 
             addVillage = new JButton("Add Village (q)");
-            addVillage.addActionListener(listener);
+            addVillage.addActionListener(mapListener);
             add(addVillage);
 
             delVillage = new JButton("Delete Village (w)");
-            delVillage.addActionListener(listener);
+            delVillage.addActionListener(mapListener);
             add(delVillage);
 
             addRoad = new JButton("Add Road (e)");
-            addRoad.addActionListener(listener);
+            addRoad.addActionListener(mapListener);
             add(addRoad);
 
             delRoad = new JButton("Delete Road (r)");
-            delRoad.addActionListener(listener);
+            delRoad.addActionListener(mapListener);
             add(delRoad);
 
-            addKeyListener(listener);
+            addKeyListener(mapListener);
         }
     }
 
     // @todo: is JOptionPane a necessary extension?
-    class VillageInfoPane extends JFrame {
+    class VillageInfoPanel extends JPanel {
+        Village village;
+        InfoPanel info;
+        GnomeCreationPanel gnomeCreation;
+        VillageListener villageListener;
 
         private LinkedList<Village> extractVillages(LinkedList<Road> roads, boolean in) {
             LinkedList<Village> villages = new LinkedList<Village>();
@@ -257,47 +264,202 @@ public class MapGUI extends JFrame {
             return villages;
         }
 
-        public VillageInfoPane(ActionEvent e) {
-            this.setLayout(new GridLayout());
-            this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        public VillageInfoPanel(ActionEvent e) {
+            villageListener = new VillageListener();
 
-            Village village = mapPanel.getVillage((JButton) e.getSource());
-            String name = village.getName();
-            int id = village.getID();
-            LinkedList<Road> roadsIn = convertMyList(village.getRoadsIn());
-            LinkedList<Village> in = extractVillages(roadsIn, true);
-            LinkedList<Road> roadsOut = convertMyList(village.getRoadsOut());
-            LinkedList<Village> out = extractVillages(roadsOut, false);
+            this.setLayout(new BorderLayout());
+            // this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-            JPanel panel=new JPanel();
-            panel.setLayout(new GridLayout(0,1));
-            panel.setBorder(new EmptyBorder(10,10,10,10));
-            
-            JLabel nameLabel = new JLabel("Village: " + name);
-            panel.add(nameLabel);
-            JLabel idLabel = new JLabel("ID: " + id);
-            panel.add(idLabel);
+            village = mapPanel.getVillage((JButton) e.getSource());
+            info = new InfoPanel(village);
+            this.add(info, BorderLayout.CENTER);
 
-            JLabel roadsInTitle = new JLabel("Inbound roads from: ");
-            panel.add(roadsInTitle);
-            JLabel roadsInData = new JLabel("\t" + in.toString());
-            panel.add(roadsInData);
-            JLabel roadsOutTitle = new JLabel("Outbound roads to: ");
-            panel.add(roadsOutTitle);
-            JLabel roadsOutData = new JLabel("\t" + out.toString());
-            panel.add(roadsOutData);
+            gnomeCreation = new GnomeCreationPanel();
+            this.add(gnomeCreation, BorderLayout.SOUTH);
 
-            //@todo: expand window if there are many connected roads
-            panel.setVisible(true);
-            this.add(panel);
-            
-            this.setSize(300, 300);
+            this.setSize(300, 400);
             this.setLocation(mapGUI.getX() + village.getX(), mapGUI.getY() + village.getY());
             this.setVisible(true);
         }
+
+        class InfoPanel extends JPanel {
+            public InfoPanel(Village village) {
+
+                String name = village.getName();
+                int id = village.getID();
+                LinkedList<Road> roadsIn = convertMyList(village.getRoadsIn());
+                LinkedList<Village> in = extractVillages(roadsIn, true);
+                LinkedList<Road> roadsOut = convertMyList(village.getRoadsOut());
+                LinkedList<Village> out = extractVillages(roadsOut, false);
+                LinkedList<Gnome> gnomes = mapPanel.villageGnomes.get(village);
+
+                GridLayout layout = new GridLayout(0, 1);
+                layout.setVgap(0);
+                this.setLayout(layout);
+                this.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+                JLabel nameLabel = new JLabel("Village: " + name);
+                this.add(nameLabel);
+                JLabel idLabel = new JLabel("ID: " + id);
+                this.add(idLabel);
+
+                this.add(new JLabel());
+
+                JLabel roadsInTitle = new JLabel("Inbound roads from: ");
+                this.add(roadsInTitle);
+                JLabel roadsInData = new JLabel("...." + in.toString());
+                this.add(roadsInData);
+
+                this.add(new JLabel());
+
+                JLabel roadsOutTitle = new JLabel("Outbound roads to: ");
+                this.add(roadsOutTitle);
+                JLabel roadsOutData = new JLabel("...." + out.toString());
+                this.add(roadsOutData);
+
+                this.add(new JLabel());
+
+                JLabel gnomesTitle = new JLabel("Gnomes residing in city: " + gnomes.getLength());
+                this.add(gnomesTitle);
+                JLabel gnomesData = new JLabel("...." + gnomes.toString());
+                this.add(gnomesData);
+
+                // @todo: expand window if there are many connected roads
+                this.setVisible(true);
+
+            }
+        }
+
+        class GnomeCreationPanel extends JPanel {
+            JButton addGnome;
+            JButton delGnome;
+            JButton inspectGnome;
+
+            public GnomeCreationPanel() {
+                this.setLayout(new GridLayout(0, 1));
+
+                addGnome = new JButton("Create gnome in " + village.getName());
+                addGnome.addActionListener(villageListener);
+                this.add(addGnome);
+
+                delGnome = new JButton("Delete a gnome");
+                delGnome.addActionListener(villageListener);
+                this.add(delGnome);
+
+                inspectGnome = new JButton("Inspect a particular gnome");
+                inspectGnome.addActionListener(villageListener);
+                this.add(inspectGnome);
+            }
+        }
+
+        class VillageListener implements ActionListener {
+
+            // name, ID, colour, VIP level
+            private Object[] promptGnomeInfo(Gnome gnome) {
+                if (gnome == null) {
+                    gnome = new Gnome("", null, 0, -1);
+                }
+
+                JPanel panel = new JPanel();
+                panel.setLayout(new GridLayout(0, 2));
+
+                JTextField name = new JTextField(gnome.getName());
+                {
+                    JLabel nameLabel = new JLabel("Name: ");
+                    
+                    panel.add(nameLabel);
+                    panel.add(name);
+                }
+
+                JButton color=new JButton();
+                {
+                    // @todo: make this a list?
+                    JLabel colorLabel = new JLabel("Favorite Color: ");
+                    panel.add(colorLabel);
+                    
+                    color.setOpaque(true);
+                    color.setBorderPainted(false);
+                    color.setBackground(gnome.getFavColor() == null ? Color.blue : gnome.getFavColor());
+                    color.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            //@todo: remove all the "sample text" from colorChooser
+                            Color newColor=JColorChooser.showDialog(color, "Favorite Color", color.getBackground());
+                            color.setBackground(newColor);
+                        }
+                        
+                    });
+                    panel.add(color);
+                    
+                }
+
+                JSpinner vip = new JSpinner();
+                {
+                    JLabel vipLabel = new JLabel("VIP status: ");
+                    panel.add(vipLabel);
+                    
+                    SpinnerNumberModel vipModel = new SpinnerNumberModel();
+                    vipModel.setMinimum(0);
+                    vipModel.setValue(gnome.getVIPLevel());
+                    vip.setModel(vipModel);
+                    panel.add(vip);
+                }
+
+                JSpinner id = new JSpinner();
+                if(gnome.getID()!=-1){
+                    JLabel idLabel = new JLabel("ID: ");
+                    panel.add(idLabel);
+                    
+                    SpinnerNumberModel idModel = new SpinnerNumberModel();
+                    idModel.setMinimum(0);
+                    idModel.setValue(gnome.getID());
+                    id.setModel(idModel);
+                    panel.add(id);
+                }
+
+                int result = JOptionPane.showConfirmDialog(mapGUI, panel, "Gnomes", JOptionPane.YES_OPTION);
+
+                if (result == JOptionPane.YES_OPTION) {
+                    Object[] out = new Object[4];
+                    out[0] = name.getText();
+                    out[1] = id.getValue();
+                    out[2] = color.getBackground();
+                    out[3] = vip.getValue();
+
+                    return out;
+                } else {
+                    return null;
+                }
+            }
+
+            private void addGnome(ActionEvent e) {
+                Object[] data = promptGnomeInfo(null);
+                if (data == null)
+                    return;
+
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (e.getSource().getClass().equals(new JButton().getClass())) {
+                    if (e.getSource().equals(gnomeCreation.addGnome)) {
+                        addGnome(e);
+                    } else if (e.getSource().equals(gnomeCreation.delGnome)) {
+                        // delGnome(e);
+                    } else if (e.getSource().equals(gnomeCreation.inspectGnome)) {
+                        // inspectGnome(e);
+                    } else {
+                        throw new RuntimeException("Uhhhhh");
+                    }
+                } else {
+                    throw new RuntimeException("uhhhh");
+                }
+            }
+
+        }
     }
 
-    class Listener implements ActionListener, MouseListener, KeyListener {
+    class MapListener implements ActionListener, MouseListener, KeyListener {
         private static final int NEUTRAL = 0;
         private static final int ADD_VILLAGE = 11;
         private static final int DEL_VILLAGE = 21;
@@ -309,7 +471,7 @@ public class MapGUI extends JFrame {
 
         private boolean roadInfoShown;
 
-        public Listener() {
+        public MapListener() {
             this.state = NEUTRAL;
             this.prev = null;
 
@@ -364,12 +526,8 @@ public class MapGUI extends JFrame {
         }
 
         private void showVillageInfo(ActionEvent e) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    new VillageInfoPane(e);
-                }
-            });
+            JOptionPane.showMessageDialog(mapGUI, new VillageInfoPanel(e), "Village Information",
+                            JOptionPane.PLAIN_MESSAGE);
         }
 
         @Override

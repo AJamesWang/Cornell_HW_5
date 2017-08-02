@@ -12,6 +12,10 @@ public class Gnome {
     public static int MAX_SIZE=6;
     public static int MIN_SIZE=2;
     
+    public String toString() {
+        return this.name+ "("+this.id+")";
+    }
+    
     /*datastructure*/
     private int id;
     private String name;
