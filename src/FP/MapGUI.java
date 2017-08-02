@@ -117,7 +117,7 @@ public class MapGUI extends JFrame {
             MyList<Gnome> gnomes = map.getGnomes();
             villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
             roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
-            //fills maps w/ empty lists tagged w/ every road
+            // fills maps w/ empty lists tagged w/ every road
             for (int i = 0; i < villages.getLength(); i++) {
                 villageGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
             }
@@ -127,7 +127,7 @@ public class MapGUI extends JFrame {
                     roadGnomes.put(road, new LinkedList<Gnome>());
                 }
             }
-            //tags every gnome w/ village or road, puts in respective map
+            // tags every gnome w/ village or road, puts in respective map
             for (int i = 0; i < gnomes.getSize(); i++) {
                 Gnome gnome = gnomes.get(i);
                 if (gnome == null)
@@ -197,7 +197,7 @@ public class MapGUI extends JFrame {
                     for (int i = 0; i < gnomeCount; i++) {
                         g.setColor(gnomes.get(i).getFavColor());
                         g.fillRect(x, y, size, size);
-                        x += size;
+                        x += size+1;
                     }
                 }
             }
@@ -283,7 +283,7 @@ public class MapGUI extends JFrame {
             this.setVisible(true);
         }
 
-        //@todo: refresh infopanel whenever new gnome is added
+        // @todo: refresh infopanel whenever new gnome is added
         class InfoPanel extends JPanel {
             public InfoPanel(Village village) {
 
@@ -340,11 +340,11 @@ public class MapGUI extends JFrame {
             public GnomeCreationPanel() {
                 this.setLayout(new GridLayout(0, 1));
 
-                addGnome = new JButton("Create gnome in " + village.getName());
+                addGnome = new JButton("Birth a gnome in " + village.getName());
                 addGnome.addActionListener(villageListener);
                 this.add(addGnome);
 
-                delGnome = new JButton("Delete a gnome");
+                delGnome = new JButton("Execute a gnome");
                 delGnome.addActionListener(villageListener);
                 this.add(delGnome);
 
@@ -407,26 +407,25 @@ public class MapGUI extends JFrame {
                     panel.add(vip);
                 }
 
-                JSpinner id = new JSpinner();
+                JLabel id = new JLabel(gnome.getID() + "");
                 if (gnome.getID() != -1) {
                     JLabel idLabel = new JLabel("ID: ");
                     panel.add(idLabel);
 
-                    SpinnerNumberModel idModel = new SpinnerNumberModel();
-                    idModel.setMinimum(0);
-                    idModel.setValue(gnome.getID());
-                    id.setModel(idModel);
+                    // SpinnerNumberModel idModel = new SpinnerNumberModel();
+                    // idModel.setMinimum(0);
+                    // idModel.setValue(gnome.getID());
+                    // id.setModel(idModel);
                     panel.add(id);
                 }
 
                 int result = JOptionPane.showConfirmDialog(mapGUI, panel, "Gnomes", JOptionPane.YES_OPTION);
 
                 if (result == JOptionPane.YES_OPTION) {
-                    Object[] out = new Object[4];
+                    Object[] out = new Object[3];
                     out[0] = name.getText();
                     out[1] = color.getBackground();
                     out[2] = vip.getValue();
-                    out[3] = id.getValue();
 
                     return out;
                 } else {
@@ -439,8 +438,28 @@ public class MapGUI extends JFrame {
                 if (data == null)
                     return;
 
-                int id=map.addGnome((String) data[0], (Color) data[1], (Integer) data[2]);
+                int id = map.addGnome((String) data[0], (Color) data[1], (Integer) data[2]);
                 map.getGnome(id).setCurrentVillage(village);
+                mapPanel.refreshVillages();
+            }
+
+            private void delGnome(ActionEvent e) {
+                int id = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
+                                JOptionPane.QUESTION_MESSAGE));
+                map.getGnomes().set_null(id);
+                mapPanel.refreshVillages();
+            }
+
+            private void inspectGnome(ActionEvent e) {
+                int id = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
+                                JOptionPane.QUESTION_MESSAGE));
+                Gnome gnome = map.getGnome(id);
+                if (gnome != null) {
+                    Object[] info = promptGnomeInfo(gnome);
+                    gnome.setName((String) info[0]);
+                    gnome.setFavColor((Color) info[1]);
+                    gnome.setVIPLevel((Integer) info[2]);
+                }
                 mapPanel.refreshVillages();
             }
 
@@ -450,9 +469,9 @@ public class MapGUI extends JFrame {
                     if (e.getSource().equals(gnomeCreation.addGnome)) {
                         addGnome(e);
                     } else if (e.getSource().equals(gnomeCreation.delGnome)) {
-                        // delGnome(e);
+                        delGnome(e);
                     } else if (e.getSource().equals(gnomeCreation.inspectGnome)) {
-                        // inspectGnome(e);
+                        inspectGnome(e);
                     } else {
                         throw new RuntimeException("Uhhhhh");
                     }
@@ -462,6 +481,7 @@ public class MapGUI extends JFrame {
             }
 
         }
+
     }
 
     class MapListener implements ActionListener, MouseListener, KeyListener {
