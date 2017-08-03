@@ -12,16 +12,18 @@ public class RoadTripTest {
 		
 		// test2 generates a bigger, clustered map with the given parameters
 		// parameters for test2 are nClusters, nVillagesPerCluster, nGnomes
-		doTest2(5, 5, 20);
+		// last parameter is max capacitty for any road/village. range will
+		// be 1..max
+		doTest2(6, 5, 32, 3);
 	}
 	
 	// simple test to set up relatively simple map and send a few
 	// Gnomes out traveling on it, printing out their progress, and
 	// some final results.
 	static void doTest1() {
-		
+		System.out.println("Starting Test1\n");
 		Map theMap = createMap1();
-		MyList<Gnome> theGnomes = createGnomes1(theMap);
+		MyList<Gnome> theGnomes = createGnomes1(theMap, 4);
 		
 		// send gnome 0 on a trip from node 4 to node 3, lazy mode
 		RoadTrip trip1 = new RoadTrip(theMap, theGnomes.get(0), 
@@ -96,11 +98,11 @@ public class RoadTripTest {
 		return m;
 	}
 	
-	static MyList<Gnome> createGnomes1(Map m) {
+	static MyList<Gnome> createGnomes1(Map m, int nGnomes) {
 		
 		// don't worry about VIP yet...
-		for (int i = 0; i < 10; i++) {
-			m.addGnome("Gnome" + i, Color.green, 0);
+		for (int i = 0; i < nGnomes; i++) {
+			m.addGnome("Gnome" + i, Color.GREEN, 0);
 		}
 		
 		return m.getGnomes();
@@ -113,14 +115,17 @@ public class RoadTripTest {
 	// only one 2-way road connecting them to one other cluster,
 	// so cluster to cluster travel will be limited. Then we send
 	// every Gnome out on a trip.
-	static void doTest2 (int nClusters, int nVillagesPerCluster, int nGnomes) {
+	// maxCapacity is the maximum capacity any road or village will 
+	// have. min is 1.
+	static void doTest2 (int nClusters, int nVillagesPerCluster, int nGnomes,
+			int maxCapacity) {
 		
 		System.out.println("\n\nTest2 start with " + nClusters + " clusters of "
 				+ nVillagesPerCluster + " villages each and " + nGnomes +
 				" Gnomes...");
 		
 		// set up Map and Gnomes
-		Map theMap = createMap2(nClusters, nVillagesPerCluster);
+		Map theMap = createMap2(nClusters, nVillagesPerCluster, maxCapacity);
 		Gnome[] theGnomes = createGnomes2(theMap, nGnomes);
 		
 		// set up and run trips
@@ -148,25 +153,29 @@ public class RoadTripTest {
 		
 	}
 	
+	// create the required number of Gnomes on the given map.
+	// use 3 VIP statuses, and 3 corresponding colors
 	static Gnome[] createGnomes2(Map m, int nGnomes) {
-		// create the given number of Gnomes, store in a MyList
+		Color[] colors = {Color.RED, Color.YELLOW, Color.GREEN};
+		
 		Gnome[] gnomes = new Gnome[nGnomes];
 		for (int i = 0; i < nGnomes; i++) {
-			m.addGnome("Gnome"+i, Color.blue, 0);
+			m.addGnome("Gnome"+i, colors[i%3], i%3);
 			gnomes[i] = m.getGnome(i);
 		}
 		
 		return gnomes;
 	}
 	
-	static Map createMap2(int nClusters, int nVillagesPerCluster) {
+	static Map createMap2(int nClusters, int nVillagesPerCluster, 
+			int maxCapacity) {
 		
 		// add the required number of villages to a new map. name them by
 		// cluster number and village number within that cluster, e.g., "C2V3"
 		Map m = new Map();
 		for (int i = 0; i < nClusters; i++) {
 			for (int j = 0; j < nVillagesPerCluster; j++) {
-				m.addVillage("C"+i+"V"+j);
+				m.addVillage("C"+i+"V"+j, (j%maxCapacity + 1));
 			}
 		}
 		
@@ -192,10 +201,12 @@ public class RoadTripTest {
 					}
 				}
 				// now we've found the village numbers we want to connect to. build roads.
-				// assign a weight value equal to the difference in id values of the two
+				// assign a weight value based on difference in id values of the two
 				// Villages.
 				for (int k = 0; k < connections.getSize(); k++) {
-					m.addRoad(v.getID(), connections.get(k), Math.abs(v.getID() - connections.get(k)));
+					m.addRoad(v.getID(), connections.get(k), 
+							2 * Math.abs(v.getID() - connections.get(k)),
+							k%maxCapacity + 1);
 				}
 			}
 		}
@@ -220,8 +231,10 @@ public class RoadTripTest {
 			int lastInPrevCluster = prevCluster * nVillagesPerCluster + nVillagesPerCluster - 1;
 			
 			// from this cluster's last to next cluster's first
-			m.addRoad(lastInThisCluster, firstInNextCluster, nVillagesPerCluster);
-			m.addRoad(firstInThisCluster, lastInPrevCluster, nVillagesPerCluster);
+			m.addRoad(lastInThisCluster, firstInNextCluster, nVillagesPerCluster,
+					lastInThisCluster%maxCapacity + 1);
+			m.addRoad(firstInThisCluster, lastInPrevCluster, nVillagesPerCluster,
+					lastInPrevCluster%maxCapacity + 1);
 			
 		}
 		// so now we have the right number of clusters, well connected
@@ -261,3 +274,4 @@ public class RoadTripTest {
 	}
 
 }
+
