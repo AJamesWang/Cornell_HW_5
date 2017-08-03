@@ -29,7 +29,7 @@ public class MyList<T> {
 	}
 	
 	// add a new item at the end
-	public void add(T newItem) {
+	public synchronized void add(T newItem) {
 		// if we have empty space in the array, it's easy. 
 		// If we don't, we need to make a new, bigger array, and
 		// copy all our items over to that new one before continuing
@@ -48,7 +48,7 @@ public class MyList<T> {
 	}
 	
 	// add a new item at the end, only if it is not already in the MyList
-	public void addIfNew(T newItem) {
+	public synchronized void addIfNew(T newItem) {
 		// add it if we didn't find it
 		if (!this.has(newItem)) {
 			add(newItem);
@@ -56,7 +56,7 @@ public class MyList<T> {
 	}
 	
 	// tell if the given item is already in the MyList
-	public boolean has(T findMe) {
+	public synchronized boolean has(T findMe) {
 		boolean foundIt = false;
 		
 		// see if this thing is already in the MyList
@@ -95,7 +95,7 @@ public class MyList<T> {
 		return size;
 	}
 	
-	public void remove(int id) {
+	public synchronized void remove(int id) {
 		 if(id < size){
 	            Object obj = theItems[id];
 	            theItems[id] = null;
