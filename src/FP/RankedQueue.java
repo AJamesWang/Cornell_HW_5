@@ -14,14 +14,13 @@ public class RankedQueue<T> {
         head = null;
     }
     
-    // create a ranked queue by 
     
     // add a new item to the queue. return its position in queue:
     // head is 0; tail is nItems-1. If the item is already in 
     // the queue, it simply returns its current position without adding
     // it again.
     //
-    public int add(T data, int rankingValue) {
+    public synchronized int add(T data, int rankingValue) {
         // create new queueItem to insert into queue
         QueueItem<T> newItem = new QueueItem<T>(data, rankingValue);
         
@@ -74,7 +73,7 @@ public class RankedQueue<T> {
     
     // remove the item at the head of the queue and return it.
     // return null if the queue is empty.
-    public T remove() {
+    public synchronized T remove() {
         T returnValue = null;
     
         // we'll return null for empty queue. otherwise
@@ -93,7 +92,26 @@ public class RankedQueue<T> {
     public int getSize() {
         return this.nItems;
     }
-    
+ 
+    // return position of item in queue, or -1 if not in queue
+    public synchronized int getPosition(T item) {
+    	int returnThis = -1;
+    	
+    	QueueItem<T> checkMe = head;
+    	int currentPosition = 0;
+    	
+    	while (checkMe != null && returnThis == -1) {
+    		if (item == checkMe.data) {
+    			returnThis = currentPosition;
+    		} else {
+    			currentPosition++;
+    			checkMe = checkMe.nextItem;
+    		}
+    	}
+    	
+    	return returnThis;
+    }
+
     // simple private class for holding one item's info
     private class QueueItem<T> {
         T               data;
@@ -107,4 +125,5 @@ public class RankedQueue<T> {
         }
         
     }
+    
 }
