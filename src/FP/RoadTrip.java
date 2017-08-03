@@ -7,17 +7,18 @@ import java.util.Random;
 // to get from a given start Village to a given destination Village.
 // Progress is determined by the travel mode (lazy vs efficient)
 // Lazy mode trips just go from town to town at random until destination.
-// Efficient mode follows lowest cost path to destination. (not done yet).
+// Efficient mode follows lowest cost path to destination.
 // There is a maximum allowable trip cost. if you don't get to your
 // destination within the max allowable cost, you are out of gas!
 // 
 // 
 public class RoadTrip extends Thread {
 	// use these to specify the travel mode
+	public static final int SIMULATION_TIME_STEP = 250; // one simulation step in ms
 	public static final int LAZY_MODE = 0;
 	public static final int EFFICIENT_MODE = 1;
 	public static final int MAX_TRIP_COST = 100; // if you don't get to dest
-	// in <= this cost, give up.
+												 // in <= this cost, give up.
 
 	// a RoadTrip object's attributes
 	private Map map; // the map we're traveling on
@@ -82,13 +83,15 @@ public class RoadTrip extends Thread {
 				System.out.println("**Starting EFFICIENT Road Trip: " 
 						+ traveler.getName() + 
 						" is going from " + startVillage.getName() + 
-						" to " + destVillage.getName() +
-						". Should take " + bestPath.getSize() + " steps.");
+						" to " + destVillage.getName() + ", VIP: " + 
+						traveler.getVIPLevel() +
+						". Should take " + bestPath.getSize() + " roads.");
 			} else {
 				System.out.println("**Starting LAZY Road Trip: " + 
 						traveler.getName() + 
 						" is going from " + startVillage.getName() + 
-						" to " + destVillage.getName() +
+						" to " + destVillage.getName() + ", VIP: " + 
+						traveler.getVIPLevel() +
 						". Good luck!");
 			}
 
@@ -98,7 +101,7 @@ public class RoadTrip extends Thread {
 			startTime = System.currentTimeMillis();
 
 			// traveler starts out in the specified village; is not on a road yet
-			putGnomeInVillage(traveler, startVillage);
+			startVillage.addOccupant(traveler);
 
 			// the trip continues until we have arrived at destination
 			while (traveler.getCurrentVillage() != destVillage && 
@@ -119,43 +122,40 @@ public class RoadTrip extends Thread {
 
 				System.out.println(traveler.getName() + " going from " + 
 						traveler.getCurrentVillage().getName() + " to " + 
-						nextVillage.getName() + ", cost is " +
+						nextVillage.getName() + " on road " +
+						roadToTake.getID() + ", cost is " +
 						roadToTake.getWeight());
 
-				// now we know the road to get on. update gnome's location status
-				// based on this. he's on this road, no longer in a village.
-				putGnomeOnRoad(traveler, roadToTake);
-
-				// travel on road is represented by sleeping
-				// for a number of seconds equal to Road's weight
-				Thread.sleep(1000 * roadToTake.getWeight());
+				// try to get on the next Road. if there's room, you get right on,
+				// but if it's full, you'll be put in that Road's waiting list.
+				// in either case, tryRoad returns after you have entered the road
+				// and completed your travel time on it.
+				tryRoad(traveler, roadToTake);
 				roadsUsedSoFar++;
 				totalCost += roadToTake.getWeight();
-
-				// traveler has arrived at next Village. time spent
-				// to pass through a village is fixed at 1 second
-				putGnomeInVillage(traveler, nextVillage);
-				Thread.sleep(1000);
-
+				
+				// now try to get into next Village. Again, you may have to wait
+				// to get in.
+				tryVillage(traveler, map.getVillage(roadToTake.getToID()));
 			}
 
 			// when we get here, the trip is complete or out of gas. 
 			// print out some trip info.
-			// remove the traveler from any road or village it is on to
-			// avoid infinite traffic jams.
 			if (traveler.getCurrentVillage() == this.destVillage) {
 				if (mode == EFFICIENT_MODE) {
 					System.out.println("**EFFICIENT Road Trip Complete. " + traveler.getName() + 
 							" went from " + startVillage.getName() + " to " +
-							destVillage.getName() + " in " + roadsUsedSoFar + 
-							" steps with cost " + totalCost + " in " + 
-							((System.currentTimeMillis() - startTime)/1000) + " seconds.");
+							destVillage.getName() + " on " + roadsUsedSoFar + 
+							" roads with cost " + totalCost + " in " + 
+							((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
+							+ " sim time.");
 				} else {
 					System.out.println("**LAZY Road Trip Complete. " + traveler.getName() + 
 							" went from " + startVillage.getName() + " to " +
-							destVillage.getName() + " in " + roadsUsedSoFar + 
-							" steps with cost " + totalCost + " in " + 
-							((System.currentTimeMillis() - startTime)/1000) + " seconds.");
+							destVillage.getName() + " on " + roadsUsedSoFar + 
+							" roads with cost " + totalCost + " in " + 
+							((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
+							+ " sim time.");
 				}
 			} else {
 				// if you get here, you never made it to the destination. sad.
@@ -163,13 +163,16 @@ public class RoadTrip extends Thread {
 						" wanted to go from " + startVillage.getName() + " to " +
 						destVillage.getName() + " but exceeded max trip cost of " + 
 						+ MAX_TRIP_COST + " using " + 
-						((System.currentTimeMillis() - startTime)/1000) + " seconds.");
+						((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
+						+ " sim time.");
 			}
+			// remove the traveler from any road or village it is on to
+			// avoid infinite traffic jams.
 			if (traveler.getCurrentRoad() != null) {
-				traveler.getCurrentRoad().removeOccupant();
+				traveler.getCurrentRoad().removeOccupant(traveler);
 			}
 			if (traveler.getCurrentVillage() != null) {
-				traveler.getCurrentVillage().removeOccupant();
+				traveler.getCurrentVillage().removeOccupant(traveler);
 			}
 			
 		} catch (InterruptedException e) {
@@ -179,38 +182,56 @@ public class RoadTrip extends Thread {
 
 	} // end of run method
 
-	// this tries to put a Gnome in a Village. If the village is full,
-	// it waits a second and tries again. Repeat until success.
-	// Remember to remove g from his current road as well, if there is one.
-	void putGnomeInVillage(Gnome g, Village v) throws InterruptedException {
-		while (v.isFull()) {
+	// this tries to put a Gnome on a Road. If the Road
+	// is already full, Gnome is put in a q to wait.
+	// When the Gnome is allowed onto the Road, we wait
+	// a number of seconds proportional to the Road weight
+	// to simulate travel time.
+	void tryRoad(Gnome g, Road r) throws InterruptedException {
+		r.requestEntry(g);
+		
+		// we may have to wait in a queue before actually getting
+		// on road. wait here until we see that the Road has
+		// allowed the Gnome to enter.
+		//
+		while (g.getCurrentRoad() != r) {
 			System.out.println("!!!Traffic Jam!!! " + g.getName() + 
-					" wating to get into village " + v.getName());
-			Thread.sleep(1000);
-		}
-		v.addOccupant();
-		g.setCurrentVillage(v);
-		if (g.getCurrentRoad() != null) {
-			g.getCurrentRoad().removeOccupant();
-			g.setCurrentRoad(null);
-		}
+					" waiting to get onto Road " + r.getID() +
+					", position in queue: " + r.getPositionInQueue(g));
+				Thread.sleep(SIMULATION_TIME_STEP);
+			}
+		System.out.println(g.getName() + " now on road " + r.getID());
+
+		// by the time you get here, you are now on the road. Sleep
+		// an amount of time proportional to road weight to simulate
+		// travel time.
+		Thread.sleep(r.getWeight() * SIMULATION_TIME_STEP);
 	}
 
-	// this tries to put a Gnome on a Road. If the Road is full,
-	// it waits a second and tries again. Repeat until success.
-	// Remember to remove g from his current Village too, if there is one.
-	void putGnomeOnRoad(Gnome g, Road r) throws InterruptedException {
-		while (r.isFull()) {
-			System.out.println("!!!Traffic Jam!!! " + g.getName() + 
-					" wating to get onto Road " + r.getID());
-			Thread.sleep(1000);
-		}
-		r.addOccupant();
-		g.setCurrentRoad(r);
-		if (g.getCurrentVillage() != null) {
-			g.getCurrentVillage().removeOccupant();
-			g.setCurrentVillage(null);
-		}
+	// this tries to put a Gnome in a Village. If Village
+	// is already full, Gnome is put in a q to wait.
+	// When the Gnome is allowed into Village, we wait
+	// one second to simulate passing through Village time.
+	//
+	void tryVillage(Gnome g, Village v) throws InterruptedException {
+		v.requestEntry(g);
+		
+		// we may have to wait in a queue before actually getting
+		// in. wait here until we see that the Village has
+		// allowed the Gnome to enter.
+		//
+		while (g.getCurrentVillage() != v) {
+			System.out.println("!!!Village Jam!!! " + g.getName() + 
+					" waiting to get into Village " + v.getName() +
+					", position in queue: " + v.getPositionInQueue(g));
+				Thread.sleep(SIMULATION_TIME_STEP);
+			}
+		System.out.println(g.getName() + " now in Village " + v.getID());
+
+		// by the time you get here, you are now in Village. Sleep
+		// one second to simulate
+		// travel time through village.
+		Thread.sleep(SIMULATION_TIME_STEP);
 	}
 
 }
