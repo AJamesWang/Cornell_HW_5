@@ -14,7 +14,7 @@ public class RoadTripTest {
 		// parameters for test2 are nClusters, nVillagesPerCluster, nGnomes
 		// last parameter is max capacitty for any road/village. range will
 		// be 1..max
-		doTest2(6, 5, 32, 3);
+		doTest2(6, 5, 20, 3);
 	}
 	
 	// simple test to set up relatively simple map and send a few
@@ -274,4 +274,3 @@ public class RoadTripTest {
 	}
 
 }
-
