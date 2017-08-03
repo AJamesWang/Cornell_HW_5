@@ -1,6 +1,7 @@
 package FP;
 
 import java.util.Random;
+import java.awt.Color;
 
 //class to try out our RoadTrip threading trickery on a sample Map
 public class RoadTripTest {
@@ -99,7 +100,7 @@ public class RoadTripTest {
 		
 		// don't worry about VIP yet...
 		for (int i = 0; i < 10; i++) {
-			m.addGnome("Gnome" + i, "Green", 0);
+			m.addGnome("Gnome" + i, Color.green, 0);
 		}
 		
 		return m.getGnomes();
@@ -151,7 +152,7 @@ public class RoadTripTest {
 		// create the given number of Gnomes, store in a MyList
 		Gnome[] gnomes = new Gnome[nGnomes];
 		for (int i = 0; i < nGnomes; i++) {
-			m.addGnome("Gnome"+i, "Blue", 0);
+			m.addGnome("Gnome"+i, Color.blue, 0);
 			gnomes[i] = m.getGnome(i);
 		}
 		
