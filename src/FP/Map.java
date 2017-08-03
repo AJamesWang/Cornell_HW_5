@@ -47,15 +47,24 @@ public class Map {
 
     // add a new village to villages. return an id
     // that can be used to quickly access this village
-    public int addVillage(String name) {
+    public synchronized int addVillage(String name) {
         Village newVillage = new Village(name, nextVillageID++);
         villages.add(newVillage);
         return newVillage.getID();
     }
+    
+    // add a new village with the specified capacity. 
+    // return its ID
+    public synchronized int addVillage(String name, int theCapacity) {
+        int theID = addVillage(name);
+        villages.get(theID).setCapacity(theCapacity);
+        return theID;
+    }
+   
 
     // remove a village from MyList villages
     // remove all the roads that went through the village
-    public void removeVillage(int id) {
+    public synchronized void removeVillage(int id) {
         Village removeMe = villages.get(id);
 
         // remove roads out until you have no more. for each road out,
@@ -91,7 +100,7 @@ public class Map {
 
     // removes a village and any roads that went through the village
     // en route to other villages should be made direct
-    public void removeVillage2(int id) {
+    public synchronized void removeVillage2(int id) {
         Village removeMe = villages.get(id);
         // outer loop iterates through the "fromVillage"s and connects
         // them to "toVIllage"s using the inner loop
@@ -115,7 +124,7 @@ public class Map {
     }
 
     // adds a new Gnome and returns its ID
-    public int addGnome(String theName, Color theFavColor, int theVIPLevel) {
+    public synchronized int addGnome(String theName, Color theFavColor, int theVIPLevel) {
         Gnome newGnome = new Gnome(theName, theFavColor, theVIPLevel, nextGnomeID++);
         gnomes.add(newGnome);
         return newGnome.getID();
@@ -124,7 +133,8 @@ public class Map {
     // add a road with the given weight and return its id
     // from one village to the other. villages are
     // specified by id#
-    public int addRoad(int from, int to, int weight) throws ArrayIndexOutOfBoundsException {
+    public synchronized int addRoad(int from, int to, int weight) 
+    		throws ArrayIndexOutOfBoundsException {
         Road newRoad = new Road(from, to, weight, nextRoadID++);
 
         villages.get(from).addRoadOut(newRoad);
@@ -132,9 +142,17 @@ public class Map {
         roads.add(newRoad);
         return newRoad.getID();
     }
+    
+    // same as above but also allows specifying capacity
+    public synchronized int addRoad(int from, int to, int weight, int capacity)
+    		throws ArrayIndexOutOfBoundsException {
+    	int theID = addRoad(from, to, weight);
+    	roads.get(theID).setCapacity(capacity);
+    	return theID;
+    }
 
     // tries to remove road, returns true if succeeded
-    public boolean removeRoad(int from, int to) {
+    public synchronized boolean removeRoad(int from, int to) {
         int roadID = -1;
         MyList<Road> roads = villages.get(from).getRoadsOut();
         for (int i = 0; i < roads.getSize(); i++) {
@@ -175,11 +193,11 @@ public class Map {
 
     // tell how many outgoing edges the given node has.
     // node is specified by id# given when added to graph.
-    public int nConnections(int id) throws ArrayIndexOutOfBoundsException {
+    public synchronized int nConnections(int id) throws ArrayIndexOutOfBoundsException {
         return villages.get(id).getRoadsOut().getSize();
     }
 
-    public MyList<Road> shortestPath(Village from, Village to) {
+    public synchronized MyList<Road> shortestPath(Village from, Village to) {
         // just return null for stupid cases
         if (villages.getSize() < 2 || from == to) {
             return null;
