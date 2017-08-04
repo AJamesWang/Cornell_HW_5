@@ -3,7 +3,7 @@ package FP;
 import javax.swing.ImageIcon;
 
 public class Village {
-    // @modified added variables
+    /*GUI*/
     public static ImageIcon ICON = new ImageIcon("button.png");
     public static int DIAMETER = ICON.getIconWidth();
     private static int location = 0;
@@ -31,6 +31,8 @@ public class Village {
         return this.name+" ("+this.id+")";
     }
     
+    
+    /*datastructure*/
     private String name;
     private MyList<Road> roadsOut;
     private MyList<Road> roadsIn;

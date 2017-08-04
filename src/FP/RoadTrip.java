@@ -13,6 +13,12 @@ import java.util.Random;
 // 
 // 
 public class RoadTrip extends Thread {
+	static MapGUI mapGUI;
+
+	public static void setMapGUI(MapGUI mapGUI){
+		RoadTrip.mapGUI=mapGUI;
+	}
+
 	// use these to specify the travel mode
 	public static final int SIMULATION_TIME_STEP = 250; // one simulation step in ms
 	public static final int LAZY_MODE = 0;
@@ -196,7 +202,7 @@ public class RoadTrip extends Thread {
 			// @modified: gnomes don't just die when they fail a roadtrip.
 			// Gnome is placed in most recently reached village
 			if (traveler.getCurrentRoad() != null) {
-				traveler.setCurrentVillage(map.getVillage(traveler.getCurrentRoad.getFromID()));
+				traveler.setInVillage(map.getVillage(traveler.getCurrentRoad().getFromID()));
 			}
 			// if (traveler.getCurrentVillage() != null) {
 			// 	traveler.getCurrentVillage().removeOccupant(traveler);
@@ -225,6 +231,7 @@ public class RoadTrip extends Thread {
 			System.out.println("!!!Traffic Jam!!! " + g.getName() + 
 					" waiting to get onto Road " + r.getID() +
 					", position in queue: " + r.getPositionInQueue(g));
+				mapGUI.refresh();
 				Thread.sleep(SIMULATION_TIME_STEP);
 			}
 		System.out.println(g.getName() + " now on road " + r.getID());
@@ -232,6 +239,7 @@ public class RoadTrip extends Thread {
 		// by the time you get here, you are now on the road. Sleep
 		// an amount of time proportional to road weight to simulate
 		// travel time.
+		mapGUI.refresh();
 		Thread.sleep(r.getWeight() * SIMULATION_TIME_STEP);
 	}
 
@@ -251,6 +259,7 @@ public class RoadTrip extends Thread {
 			System.out.println("!!!Village Jam!!! " + g.getName() + 
 					" waiting to get into Village " + v.getName() +
 					", position in queue: " + v.getPositionInQueue(g));
+				mapGUI.refresh();
 				Thread.sleep(SIMULATION_TIME_STEP);
 			}
 		System.out.println(g.getName() + " now in Village " + v.getID());
@@ -258,6 +267,7 @@ public class RoadTrip extends Thread {
 		// by the time you get here, you are now in Village. Sleep
 		// one second to simulate
 		// travel time through village.
+		mapGUI.refresh();
 		Thread.sleep(SIMULATION_TIME_STEP);
 	}
 

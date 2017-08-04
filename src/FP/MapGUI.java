@@ -42,6 +42,7 @@ public class MapGUI extends JFrame {
 
     public MapGUI(Map map) {
         super("Main Frame");
+        RoadTrip.setMapGUI(this);
         this.mapGUI = this;
         this.map = map;
         this.mapListener = new MapListener();
@@ -61,6 +62,10 @@ public class MapGUI extends JFrame {
         this.setVisible(true);
     }
 
+    public void refresh(){
+        mapPanel.refreshVillages();
+    }
+
     class MapPanel extends JPanel {
         // button and associated village
         LinkedList<Tuple<JButton, Village>> villages;
@@ -76,7 +81,7 @@ public class MapGUI extends JFrame {
             refreshVillages();
         }
 
-        public void refreshVillages() {
+        private void refreshVillages() {
             for (int i = 0; i < villages.getLength(); i++) {
                 JButton button = villages.get(i).getA();
                 button.getParent().remove(button);
@@ -430,7 +435,7 @@ public class MapGUI extends JFrame {
                         @Override
                         public void actionPerformed(ActionEvent e){
                             RoadTrip roadTrip=gnomeFinal.getCurRoadTrip();
-                            if(roadTrip==null){
+                            if(roadTrip==null || !roadTrip.isAlive()){
                                 JOptionPane.showMessageDialog(mapGUI, gnomeFinal.getName()+" is currently not on a trip", "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
                             } else{
                                 String name=gnomeFinal.getName();
@@ -511,15 +516,15 @@ public class MapGUI extends JFrame {
                     return;
 
                 int id = map.addGnome((String) data[0], (Color) data[1], (Integer) data[2]);
-                map.getGnome(id).setCurrentVillage(village);
-                mapPanel.refreshVillages();
+                map.getGnome(id).setInVillage(village);
+                refresh();
             }
 
             private void delGnome(ActionEvent e) {
                 int id = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
                                 JOptionPane.QUESTION_MESSAGE));
                 map.getGnomes().set_null(id);
-                mapPanel.refreshVillages();
+                refresh();
             }
 
             private void inspectGnome(ActionEvent e) {
@@ -532,7 +537,7 @@ public class MapGUI extends JFrame {
                     gnome.setFavColor((Color) info[1]);
                     gnome.setVIPLevel((Integer) info[2]);
                 }
-                mapPanel.refreshVillages();
+                refresh();
             }
 
             @Override
@@ -585,7 +590,7 @@ public class MapGUI extends JFrame {
             } else {
                 throw new RuntimeException("UHHHH");
             }
-            mapPanel.refreshVillages();
+            refresh();
             state = NEUTRAL;
         }
 
@@ -604,7 +609,7 @@ public class MapGUI extends JFrame {
                 prev = null;
                 state = NEUTRAL;
             }
-            mapPanel.refreshVillages();
+            refresh();
         }
 
         private void delRoad(ActionEvent e) {
@@ -619,7 +624,7 @@ public class MapGUI extends JFrame {
                 prev = null;
                 state = NEUTRAL;
             }
-            mapPanel.refreshVillages();
+            refresh();
         }
 
         private void showVillageInfo(ActionEvent e) {
@@ -684,7 +689,7 @@ public class MapGUI extends JFrame {
             // so village stays centered(ish) on mouse
             map.getVillage(id).setX(e.getX() - Village.DIAMETER / 2);
             map.getVillage(id).setY(e.getY() - Village.DIAMETER);
-            mapPanel.refreshVillages();
+            refresh();
             state = NEUTRAL;
             repaint();
         }
