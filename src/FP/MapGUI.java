@@ -64,7 +64,8 @@ public class MapGUI extends JFrame {
         // button and associated village
         LinkedList<Tuple<JButton, Village>> villages;
         HashMap<Village, LinkedList<Gnome>> villageGnomes;
-        HashMap<Road, LinkedList<Gnome>> roadGnomes;
+        HashMap<Village, LinkedList<Gnome>> emmigratingGnomes;
+        HashMap<Village, LinkedList<Gnome>> immigratingGnomes;
 
         public MapPanel() {
             super();
@@ -116,17 +117,15 @@ public class MapGUI extends JFrame {
         protected void updateGnomes() {
             MyList<Gnome> gnomes = map.getGnomes();
             villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
-            roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
+            immigratingGnomes = new HashMap<Village, LinkedList<Gnome>>();
+            emmigratingGnomes = new HashMap<Village, LinkedList<Gnome>>();
             // fills maps w/ empty lists tagged w/ every road
             for (int i = 0; i < villages.getLength(); i++) {
                 villageGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
+                immigratingGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
+                emmigratingGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
             }
-            for (int i = 0; i < map.getRoads().getSize(); i++) {
-                Road road = map.getRoad(i);
-                if (road != null) {
-                    roadGnomes.put(road, new LinkedList<Gnome>());
-                }
-            }
+
             // tags every gnome w/ village or road, puts in respective map
             for (int i = 0; i < gnomes.getSize(); i++) {
                 Gnome gnome = gnomes.get(i);
@@ -138,7 +137,8 @@ public class MapGUI extends JFrame {
                     villageGnomes.get(village).add(gnome);
                 } else if (gnome.getCurrentRoad() != null) {
                     Road road = gnome.getCurrentRoad();
-                    roadGnomes.get(road).add(gnome);
+                    immigratingGnomes.get(map.getVillage(road.getToID())).add(gnome);
+                    emmigratingGnomes.get(map.getVillage(road.getFromID())).add(gnome);
                 }
             }
         }
@@ -269,6 +269,8 @@ public class MapGUI extends JFrame {
             villageListener = new VillageListener();
 
             this.setLayout(new BorderLayout());
+
+            //no longer needed b/c it's being opened in a JOptionPane
             // this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
             village = mapPanel.getVillage((JButton) e.getSource());
@@ -412,11 +414,71 @@ public class MapGUI extends JFrame {
                     JLabel idLabel = new JLabel("ID: ");
                     panel.add(idLabel);
 
+                    //do not want user to be able to edit id
                     // SpinnerNumberModel idModel = new SpinnerNumberModel();
                     // idModel.setMinimum(0);
                     // idModel.setValue(gnome.getID());
                     // id.setModel(idModel);
                     panel.add(id);
+                }
+
+                JButton roadTripInfo=new JButton("Current road trip status");
+                {
+                    final Gnome gnomeFinal=gnome;
+                    roadTripInfo.addActionListener(new ActionListener(){
+                        @Override
+                        public void actionPerformed(ActionEvent e){
+                            RoadTrip roadTrip=gnomeFinal.getCurRoadTrip();
+                            if(roadTrip==null){
+                                JOptionPane.showMessageDialog(mapGUI, gnomeFinal.getName()+" is currently not on a trip", "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
+                            } else{
+                                String name=gnome.getName();
+                                String speed=gnome.getMode()==RoadTrip.LAZY_MODE?"scenic":"direct";
+                                Village destination = roadTrip.getDestination();
+                                Village roadFrom = map.getVillage(gnomeFinal.getCurrentRoad().getToID());
+                                Village roadTo = map.getVillage(gnomeFinal.getCurrentRoad().getFromID());
+                                double progress = roadTrip.getProgress();
+                                long timeTraveled=roadTrip.getTravelTime();
+
+                                String line1=gnome.getName+" is on a "+speed+" trip to "+destination.getName()+".\n";
+                                String line2="This gnome is currenly on the road connecting "+roadFrom.getName()+" and "+roadTo.getName()+".\n";
+                                String line3="It (he? she? they? Alas, gnome gender may forever remain a mystery) is currently "+progress+
+                                             " of the way there,\n having traveled for "+timeTraveled" days.";
+                                JOptionPane.showMessageDialog(mapGUI, line1+line2+line3, "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
+                            }
+                        }
+                    });
+                }
+
+                JButton roadTripNew=new JButton("Go on a road trip!");
+                {
+                    final gnomeFinal=gnome;
+                    roadTripInfo.addActionListener(new ActionEvent(){
+                        @Override
+                        public void actionPerformed(ActionEvent e){
+                            RoadTrip roadTripOld=gnomeFinal.getCurRoadTrip();
+
+                            JPanel villagesPanel=new JPanel();
+                            JLabel villagesLabel=new JLabel("Select village: ");
+                            villagesPanel.add(villageLabel);
+                            Village[] selectionValues=convertMyList(map.getVillages()).toArray();
+                            JComboxBox villages=new JComboBox(selectionValues);
+                            villagesPanel.add(villages);
+
+                            Object[] buttonLabels={"Scenic", "Direct", "Cancel"};
+                            int selection=JOptionPane.showOptionDialog(mapGUI, villagePanel, "Road Trip Planning!"
+                                          ,JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttonLabels, JOptionPane.YES_OPTION);
+-1
+                            RoadTrip roadTrip=roadTrip=new RoadTrip(map, gnomeFinal, gnomeFinal.getCurrentVillage, (Village)villages.getSelectedItem(), -1);
+                            if(selection==JOptionPane.YES_OPTION){
+                                roadTrip.setMode(RoadTrip.LAZY_MODE);
+                            } else if(selection==JOptionPane.NO_OPTION){
+                                roadTrip.setMode(RoadTrip.EFFICIENT_MODE);
+                            } else{
+                                roadTrip.interrupt();
+                            }
+                        }
+                    });
                 }
 
                 int result = JOptionPane.showConfirmDialog(mapGUI, panel, "Gnomes", JOptionPane.YES_OPTION);

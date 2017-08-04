@@ -48,8 +48,33 @@ public class RoadTrip extends Thread {
 		}
 	}
 	
+	//@modified
+	public Village getDestination(){
+		return this.destVillage;
+	}
+
+	public long getTravelTime(){
+		return (System.currentTimeMillis() - startTime)/1000;
+	}
+
 	public int getMode() {
 		return this.mode;
+	}
+
+	public double getProgress(){
+		if(bestPath==null){
+			return -1;
+		} else{
+			double travelled=0;
+			for(int i=0;i<roadsUsedSoFar; i++){
+				travelled+=bestPath.get(i).getWeight();
+			}
+			double total=0;
+			for(int i=0;i<bestPath.getSize(); i++){
+				total+=bestPath.get(i).getWeight();
+			}
+			return travelled/total;
+		}
 	}
 	
 	// will only set the mode if the input is a legitimate value.

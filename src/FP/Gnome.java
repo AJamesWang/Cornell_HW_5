@@ -23,6 +23,7 @@ public class Gnome {
     private int vipLevel; // 0 for commoners, higher values for fancier people
     private Village inVillage; // village he's in, or null if not in a village
     private Road onRoad; // Road he's on, or null if not on a road
+    private RoadTrip roadTrip;
     private MyList<Village> villageHistory; // keeps track of villages visited
 
     // normal case constructor
@@ -87,8 +88,24 @@ public class Gnome {
         this.onRoad = newRoad;
     }
 
-    public MyList<Village> getVillageHistory() {
-        return this.villageHistory;
+    public RoadTrip getCurRoadTrip(){
+        return this.roadTrip;
     }
+
+    public void setNewRoadTrip(Map map, Village destination, int mode){
+        if (this.inVillage!=null){
+            this.roadTrip=new RoadTrip(map, this, this.inVillage, destination, mode);
+        }
+        else {
+            //@todo: delete current roadTrip
+            //teleports gnome to end of current road
+            this.inVillage=map.getVillage(this.onRoad.getToID());
+            this.roadTrip=new RoadTrip(map, this, this.inVillage, destination, mode);
+        }
+    }
+
+public MyList<Village> getVillageHistory() {
+    return this.villageHistory;
+}
 
 }
