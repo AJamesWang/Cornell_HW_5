@@ -45,7 +45,7 @@ public class Village {
     private RankedQueue<Gnome> waitingList;
 
     public Village(String name, int theID) {
-        this.name = name;
+        this.name = name.equals("")?"Unnamed":name;
         this.roadsOut = new MyList<Road>();
         this.roadsIn = new MyList<Road>();
         this.id = theID;

@@ -193,12 +193,14 @@ public class RoadTrip extends Thread {
 			}
 			// remove the traveler from any road or village it is on to
 			// avoid infinite traffic jams.
+			// @modified: gnomes don't just die when they fail a roadtrip.
+			// Gnome is placed in most recently reached village
 			if (traveler.getCurrentRoad() != null) {
-				traveler.getCurrentRoad().removeOccupant(traveler);
+				traveler.setCurrentVillage(map.getVillage(traveler.getCurrentRoad.getFromID()));
 			}
-			if (traveler.getCurrentVillage() != null) {
-				traveler.getCurrentVillage().removeOccupant(traveler);
-			}
+			// if (traveler.getCurrentVillage() != null) {
+			// 	traveler.getCurrentVillage().removeOccupant(traveler);
+			// }
 			
 		} catch (InterruptedException e) {
 			System.out.println(traveler.getName() + "'s travel thread interrupted.");
