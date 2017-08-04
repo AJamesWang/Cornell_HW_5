@@ -88,7 +88,6 @@ public class Gnome {
     		}
         }
     }
-<<<<<<< HEAD
 
     public RoadTrip getCurRoadTrip(){
         return this.roadTrip;
@@ -109,8 +108,6 @@ public class Gnome {
 public MyList<Village> getVillageHistory() {
     return this.villageHistory;
 }
-
-=======
     
     // set the inVillage value to be this Village.
     // set onRoad to be null.
@@ -130,7 +127,6 @@ public MyList<Village> getVillageHistory() {
     public MyList<Village> getVillageHistory() {
         return this.villageHistory;
     }
-    
->>>>>>> 271e69c19e23911630fe4a24ff14ca986aeeac9a
+   
 }
 
