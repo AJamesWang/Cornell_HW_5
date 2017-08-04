@@ -7,7 +7,7 @@ import java.awt.Color;
 // a new Gnome is neither in a village nor on a road when created, but
 // When traveling, will be either in a village OR on a road. If the Gnome
 // is currently in a Village, onRoad will be null, and vice-versa.
-public class Gnome {
+public class Gnome implements Comparable {
     /*GUI*/
     public static int MAX_SIZE=6;
     public static int MIN_SIZE=2;
@@ -70,9 +70,6 @@ public class Gnome {
         return this.inVillage;
     }
     
-    public void setCurrentVillage(Village currentVillage) {
-    	this.inVillage = currentVillage;
-    }
         
     // return current Road if on a Road, null if not on a Road now.
     public Road getCurrentRoad() {
@@ -127,5 +124,25 @@ public MyList<Village> getVillageHistory() {
     		}
         }
     }
+    
+    public int compareTo(Object o) {
+    	int returnThis = 0;
+    	
+    	if(o.getClass() == String.class) {
+    		String s = (String) o;
+    		returnThis = (this.getName().compareTo(s));
+    	}
+    	else if (o.getClass() == Color.class) {
+    		Integer i = ((Color) o).getRGB();
+    		returnThis = ((Integer)(this.getFavColor().getRGB())).compareTo(i);
+    	}
+    	else {
+    		Integer i = (Integer) o;
+    		returnThis = ((Integer)this.getVIPLevel()).compareTo(i);
+    	}
+    	
+    	return returnThis;
+    }
+
 }
 
