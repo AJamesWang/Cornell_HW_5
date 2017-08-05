@@ -13,6 +13,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowListener;
+import java.awt.event.WindowEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 import java.util.HashMap;
 
 import javax.swing.ImageIcon;
@@ -28,9 +32,25 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JComboBox;
+import javax.swing.JScrollPane;
+import javax.swing.BorderFactory;
 
 import datastructures.LinkedList;
 import datastructures.Tuple;
+
+/*@todo:
+  make separate GnomeFrame
+      Search for gnomes
+  show gnomes on road
+  let gnomes move randomly or shift to adjacent village
+  make pause button
+  Make MST
+  Make friend graph
+
+  draw id when painting village
+  make road toll/capacity clearer
+  limit color choices to clearly distinguishable colours
+*/
 
 public class MapGUI extends JFrame {
     private static int ROAD_ARROW_RATIO = 10;
@@ -228,6 +248,7 @@ public class MapGUI extends JFrame {
         JButton delVillage;
         JButton addRoad;
         JButton delRoad;
+        JButton viewGnomes;
 
         public MapButtonPanel() {
             super();
@@ -248,6 +269,10 @@ public class MapGUI extends JFrame {
             delRoad = new JButton("Delete Road (r)");
             delRoad.addActionListener(mapListener);
             add(delRoad);
+
+            viewGnomes = new JButton("Gnomes");
+            viewGnomes.addActionListener(mapListener);
+            add(viewGnomes);
 
             addKeyListener(mapListener);
         }
@@ -329,7 +354,7 @@ public class MapGUI extends JFrame {
 
                 this.add(new JLabel());
 
-                JLabel gnomesTitle = new JLabel("Gnomes residing in city: " + gnomes.getLength());
+                JLabel gnomesTitle = new JLabel("Gnomes residing in city: " + gnomes.getLength() + "/"+village.getCapacity());
                 this.add(gnomesTitle);
                 JLabel gnomesData = new JLabel("...." + gnomes.toString());
                 this.add(gnomesData);
@@ -383,7 +408,6 @@ public class MapGUI extends JFrame {
 
                 JButton color = new JButton();
                 {
-                    // @todo: make this a list?
                     JLabel colorLabel = new JLabel("Favorite Color: ");
                     panel.add(colorLabel);
 
@@ -395,7 +419,9 @@ public class MapGUI extends JFrame {
                         public void actionPerformed(ActionEvent e) {
                             // @todo: remove all the "sample text" from colorChooser
                             Color newColor = JColorChooser.showDialog(color, "Favorite Color", color.getBackground());
-                            color.setBackground(newColor);
+                            if(color!=null){
+                                color.setBackground(newColor);
+                            }
                         }
 
                     });
@@ -521,21 +547,31 @@ public class MapGUI extends JFrame {
             }
 
             private void delGnome(ActionEvent e) {
-                int id = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
-                                JOptionPane.QUESTION_MESSAGE));
-                map.getGnomes().set_null(id);
+                String input=JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
+                                JOptionPane.QUESTION_MESSAGE);
+                if(input!=null){
+                    int id = Integer.parseInt(input);
+                    if(id<map.getGnomes().getSize()){
+                        map.getGnomes().set_null(id);
+                    }
+                }
                 refresh();
             }
 
             private void inspectGnome(ActionEvent e) {
-                int id = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
-                                JOptionPane.QUESTION_MESSAGE));
-                Gnome gnome = map.getGnome(id);
-                if (gnome != null) {
-                    Object[] info = promptGnomeInfo(gnome);
-                    gnome.setName((String) info[0]);
-                    gnome.setFavColor((Color) info[1]);
-                    gnome.setVIPLevel((Integer) info[2]);
+                String input=JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
+                                JOptionPane.QUESTION_MESSAGE);
+                if(input!=null){
+                    int id = Integer.parseInt(input);
+                    if(id<map.getGnomes().getSize()){
+                        Gnome gnome = map.getGnome(id);
+                        if (gnome != null) {
+                            Object[] info = promptGnomeInfo(gnome);
+                            gnome.setName((String) info[0]);
+                            gnome.setFavColor((Color) info[1]);
+                            gnome.setVIPLevel((Integer) info[2]);
+                        }
+                    }
                 }
                 refresh();
             }
@@ -561,6 +597,247 @@ public class MapGUI extends JFrame {
 
     }
 
+    class GnomeFrame extends JFrame {
+
+        SearchPanel searchPanel;
+        JPanel mainPanel;
+
+        public GnomeFrame(){
+            this.setSize(400,400);
+            this.setLayout(new BorderLayout());
+
+            searchPanel=new SearchPanel();
+            this.add(searchPanel, BorderLayout.NORTH);
+            refreshGnomeFrame();
+
+            addKeyListener(mapListener);
+            this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            this.addWindowListener(new WindowListener(){
+                @Override
+                public void windowOpened(WindowEvent e){
+                    mapListener.gnomesFrameIsActive=true;
+                }
+
+                @Override
+                public void windowClosing(WindowEvent e){
+                    mapListener.gnomesFrameIsActive=false;
+                }
+
+                @Override
+                public void windowClosed(WindowEvent e){
+                    mapListener.gnomesFrameIsActive=false;
+                }
+
+                @Override
+                public void windowActivated(WindowEvent e){
+
+                }
+
+                @Override
+                public void windowDeactivated(WindowEvent e){
+
+                }
+
+                @Override
+                public void windowIconified(WindowEvent e){
+                }
+
+                @Override
+                public void windowDeiconified(WindowEvent e){
+
+                }
+            });
+
+            this.addKeyListener(mapListener);
+            this.setVisible(true);
+        }
+
+        private void refreshGnomeFrame(){
+            int idMin=(Integer)searchPanel.idMin.getValue();
+            int idMax=(Integer)searchPanel.idMax.getValue();
+            String _name=searchPanel.name.getText();
+            Color _color=searchPanel.color.getData();
+            int statusMin=(Integer)searchPanel.statusMin.getValue();
+            int statusMax=(Integer)searchPanel.statusMax.getValue();
+
+
+            Gnome.NumberRange id=new Gnome.NumberRange(idMin<1?null:idMin, idMax<1?null:idMax);
+            Gnome.StringRange name=new Gnome.StringRange(_name);
+            Gnome.ColorRange color=new Gnome.ColorRange(_color);
+            Gnome.NumberRange status=new Gnome.NumberRange(statusMin<1?null:statusMin, statusMax<1?null:statusMax);
+
+            if(mainPanel!=null){
+                this.getContentPane().remove(mainPanel);
+                this.validate();
+            }
+            GnomeInfoPanel gnomeInfoPanel=new GnomeInfoPanel(id, name, color, status);
+            JScrollPane scrollPane=new JScrollPane(gnomeInfoPanel);
+            mainPanel=new JPanel();
+            mainPanel.add(scrollPane);
+            this.getContentPane().add(mainPanel, BorderLayout.CENTER);
+            this.validate();
+            repaint();
+        }
+
+
+        class SearchPanel extends JPanel{
+            JSpinner idMin;
+            JSpinner idMax;
+            JTextField name;
+            DataButton<Color> color;
+            JSpinner statusMin;
+            JSpinner statusMax;
+
+            public SearchPanel(){
+                this.setLayout(new GridLayout(2, 6));
+
+                add(new JLabel("ID min"));
+                add(new JLabel("ID max"));
+                add(new JLabel("Name Filter"));
+                add(new JLabel("Color Filter"));
+                add(new JLabel("Min Status"));
+                add(new JLabel("Max Status"));
+
+                idMin=new JSpinner();
+                SpinnerNumberModel idMinModel=new SpinnerNumberModel();
+                idMinModel.setMinimum(-1);
+                idMinModel.setValue(-1);
+                idMin.setModel(idMinModel);
+                idMin.addChangeListener(new ChangeListener(){
+                    @Override
+                    public void stateChanged(ChangeEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(idMin);
+
+                idMax=new JSpinner();
+                SpinnerNumberModel idMaxModel=new SpinnerNumberModel();
+                idMaxModel.setMinimum(-1);
+                idMaxModel.setValue(-1);
+                idMax.setModel(idMaxModel);
+                idMax.addChangeListener(new ChangeListener(){
+                    @Override
+                    public void stateChanged(ChangeEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(idMax);
+
+                name=new JTextField();
+                name.addActionListener(new ActionListener(){
+                    @Override
+                    public void actionPerformed(ActionEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(name);
+
+                color=new DataButton<Color>();
+                color.setOpaque(true);
+                color.setBorderPainted(false);
+                color.addActionListener(new ActionListener(){
+                    @Override
+                    public void actionPerformed(ActionEvent e){
+                        Color colorData=JColorChooser.showDialog(color, "Favorite Color", color.getData());
+                        color.setData(colorData);
+                        if(color!=null){
+                            color.setBackground(colorData);
+                        }
+                        refreshGnomeFrame();
+                    }
+                });
+                add(color);
+
+                statusMin=new JSpinner();
+                SpinnerNumberModel statusMinModel=new SpinnerNumberModel();
+                statusMinModel.setMinimum(-1);
+                statusMinModel.setValue(-1);
+                statusMin.setModel(statusMinModel);
+                statusMin.addChangeListener(new ChangeListener(){
+                    @Override
+                    public void stateChanged(ChangeEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(statusMin);
+
+
+                statusMax=new JSpinner();
+                SpinnerNumberModel statusMaxModel=new SpinnerNumberModel();
+                statusMaxModel.setMinimum(-1);
+                statusMaxModel.setValue(-1);
+                statusMax.setModel(statusMaxModel);
+                statusMax.addChangeListener(new ChangeListener(){
+                    @Override
+                    public void stateChanged(ChangeEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(statusMax);
+                addKeyListener(mapListener);
+            }
+        }
+
+        class GnomeInfoPanel extends JPanel{
+
+            //@todo:implement strictness
+            //if strict: follows all restrictions         if not strict: follows at least 1 restriction
+            public GnomeInfoPanel(Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange, Gnome.NumberRange statusRange){
+                //id, name, color, VIP
+                setLayout(new GridLayout(0, 4));
+
+                JLabel id=new JLabel("ID");
+                id.setBorder(BorderFactory.createLineBorder(Color.black));
+                JLabel name=new JLabel("Name");
+                name.setBorder(BorderFactory.createLineBorder(Color.black));
+                JLabel color=new JLabel("Favorite Color");
+                color.setBorder(BorderFactory.createLineBorder(Color.black));
+                JLabel status=new JLabel("VIP Status");
+                status.setBorder(BorderFactory.createLineBorder(Color.black));
+
+                add(id);
+                add(name);
+                add(color);
+                add(status);
+
+                LinkedList<Gnome> gnomes=convertMyList(map.getGnomes());
+                for(Object obj:gnomes.toArray()){
+                    Gnome gnome=(Gnome)obj;
+                    this.addGnome(gnome, idRange, nameRange, colorRange, statusRange);
+                }
+
+                addKeyListener(mapListener);
+            }
+
+            private void addGnome(Gnome gnome, Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange, Gnome.NumberRange statusRange){
+                int _id=gnome.getID();
+                String _name=gnome.getName();
+                Color _color=gnome.getFavColor();
+                int _status=gnome.getVIPLevel();
+                if(idRange.contains(_id) && nameRange.contains(_name) 
+                   && colorRange.contains(_color) && statusRange.contains(_status)){
+
+                    JLabel id=new JLabel(_id+"");
+                    id.setBorder(BorderFactory.createLineBorder(Color.black));
+                    JLabel name=new JLabel(_name);
+                    name.setBorder(BorderFactory.createLineBorder(Color.black));
+                    JLabel color=new JLabel();
+                    color.setBackground(_color);
+                    color.setOpaque(true);
+                    color.setBorder(BorderFactory.createLineBorder(Color.black));
+                    JLabel status=new JLabel(_status+"");
+                    status.setBorder(BorderFactory.createLineBorder(Color.black));
+
+                    add(id);
+                    add(name);
+                    add(color);
+                    add(status);
+                }
+            }
+        }
+    }
+
     class MapListener implements ActionListener, MouseListener, KeyListener {
         private static final int NEUTRAL = 0;
         private static final int ADD_VILLAGE = 11;
@@ -568,15 +845,16 @@ public class MapGUI extends JFrame {
         private static final int ADD_ROAD = 12;
         private static final int DEL_ROAD = 22;
 
-        int state;
-        Village prev;
-
+        private int state;
+        private Village prev;
+        private boolean gnomesFrameIsActive;
         private boolean roadInfoShown;
 
         public MapListener() {
             this.state = NEUTRAL;
             this.prev = null;
 
+            gnomesFrameIsActive = false;
             roadInfoShown = false;
         }
 
@@ -603,8 +881,34 @@ public class MapGUI extends JFrame {
                     JOptionPane.showMessageDialog(mapGUI, "That would be a pointless road", "Foolish Mortal",
                                     JOptionPane.WARNING_MESSAGE);
                 } else {
-                    int weight = Integer.parseInt(JOptionPane.showInputDialog(mapGUI, "How much is the toll?"));
-                    map.addRoad(prev.getID(), next.getID(), weight);
+                    //allows for multiple roads connecting the same villages
+                    JPanel roadPanel=new JPanel();
+                    roadPanel.setLayout(new GridLayout(0,1));
+                    JLabel tollLabel=new JLabel("Toll: ");
+                    roadPanel.add(tollLabel);
+                    JSpinner toll=new JSpinner();
+                    SpinnerNumberModel tollModel = new SpinnerNumberModel();
+                    tollModel.setMinimum(1);
+                    tollModel.setMaximum(50);
+                    tollModel.setValue(10);
+                    toll.setModel(tollModel);
+                    roadPanel.add(toll);
+                    JLabel sizeLabel=new JLabel("Maximum Capacity: ");
+                    roadPanel.add(sizeLabel);
+                    JSpinner size=new JSpinner();
+                    SpinnerNumberModel sizeModel = new SpinnerNumberModel();
+                    sizeModel.setMinimum(1);
+                    sizeModel.setValue(100);
+                    size.setModel(sizeModel);
+                    roadPanel.add(size);
+
+                    int response=JOptionPane.showOptionDialog(mapGUI, roadPanel, "Road Creation"
+                                                            ,JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{"OK", "Cancel"}, JOptionPane.YES_OPTION);
+                    
+                    if(response==JOptionPane.YES_OPTION){
+
+                        map.addRoad(prev.getID(), next.getID(), (Integer) toll.getValue(), (Integer)size.getValue());
+                    }
                 }
                 prev = null;
                 state = NEUTRAL;
@@ -617,8 +921,6 @@ public class MapGUI extends JFrame {
                 prev = mapPanel.getVillage((JButton) e.getSource());
             } else {
                 Village next = mapPanel.getVillage((JButton) e.getSource());
-                // @todo_0: uncomment after removeRoad is added
-                // System.out.println("not implemented");
                 map.removeRoad(prev.getID(), next.getID());
                 repaint();
                 prev = null;
@@ -630,6 +932,20 @@ public class MapGUI extends JFrame {
         private void showVillageInfo(ActionEvent e) {
             JOptionPane.showMessageDialog(mapGUI, new VillageInfoPanel(e), "Village Information",
                             JOptionPane.PLAIN_MESSAGE);
+        }
+
+        private void viewGnomes(ActionEvent e){
+            if(gnomesFrameIsActive)
+                return;
+            // moved to GnomeFrame
+            // gnomesFrameIsActive=true;
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    new GnomeFrame();
+                }
+            });
+
         }
 
         @Override
@@ -648,6 +964,10 @@ public class MapGUI extends JFrame {
                     prev = null;
                 } else if (b.equals(buttonPanel.delRoad)) {
                     state = DEL_ROAD;
+                    prev = null;
+                } else if (b.equals(buttonPanel.viewGnomes)){
+                    viewGnomes(e);
+                    state = NEUTRAL;
                     prev = null;
                 } else { // one of the villages was clicked
                     switch (this.state) {
@@ -683,15 +1003,34 @@ public class MapGUI extends JFrame {
                 return;
             } else if (state != ADD_VILLAGE)
                 return;
-            String name = JOptionPane.showInputDialog(mapGUI, "What would you like to name the village?");
-            int id = map.addVillage(name);
-            // don't know why coors have inconsistent offsets
-            // so village stays centered(ish) on mouse
-            map.getVillage(id).setX(e.getX() - Village.DIAMETER / 2);
-            map.getVillage(id).setY(e.getY() - Village.DIAMETER);
-            refresh();
+
+            JPanel villagePanel=new JPanel();
+            villagePanel.setLayout(new GridLayout(0,1));
+            JLabel nameLabel=new JLabel("Name: ");
+            villagePanel.add(nameLabel);
+            JTextField name=new JTextField();
+            villagePanel.add(name);
+            JLabel sizeLabel=new JLabel("Maximum Capacity: ");
+            villagePanel.add(sizeLabel);
+            JSpinner size=new JSpinner();
+            SpinnerNumberModel sizeModel = new SpinnerNumberModel();
+            sizeModel.setMinimum(1);
+            sizeModel.setValue(100);
+            size.setModel(sizeModel);
+            villagePanel.add(size);
+
+            int response=JOptionPane.showOptionDialog(mapGUI, villagePanel, "Village creation"
+                                          ,JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{"OK", "Cancel"}, JOptionPane.YES_OPTION);
+
+            if(response==JOptionPane.YES_OPTION){
+                int id = map.addVillage(name.getText(), (Integer)size.getValue());
+                // don't know why coors have inconsistent offsets
+                // so village stays centered(ish) on mouse
+                map.getVillage(id).setX(e.getX() - Village.DIAMETER / 2);
+                map.getVillage(id).setY(e.getY() - Village.DIAMETER);
+                refresh();
+            }
             state = NEUTRAL;
-            repaint();
         }
 
         @Override

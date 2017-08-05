@@ -16,6 +16,42 @@ public class Gnome implements Comparable {
         return this.name+" ("+this.id+")";
     }
     
+    static class StringRange{
+        String expression;
+        public StringRange(String expression){
+            this.expression=expression;
+        }
+
+        public boolean contains(String s){
+            return s.contains(expression);
+        }
+    }
+
+    static class ColorRange{
+        Color color;
+        public ColorRange(Color color){
+            this.color=color;
+        }
+
+        public boolean contains(Color color){
+            return this.color==null || this.color.equals(color);
+        }
+    }
+
+    static class NumberRange{
+        Integer low;
+        Integer high;
+
+        public NumberRange(Integer low, Integer high){
+            this.low=low;
+            this.high=high;
+        }
+
+        public boolean contains(int i){
+            return (low==null||((int)low)<=i) && (high==null || ((int)high)>=i);
+        }
+    }
+
     /*datastructure*/
     private int id;
     private String name;

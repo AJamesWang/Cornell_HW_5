@@ -30,8 +30,7 @@ public class Village {
     public String toString() {
         return this.name+" ("+this.id+")";
     }
-    
-    
+
     /*datastructure*/
     private String name;
     private MyList<Road> roadsOut;
@@ -106,6 +105,10 @@ public class Village {
 
     public boolean isFull() {
         return (currentPop >= capacity);
+    }
+
+    public int getCapacity(){
+        return this.capacity;
     }
 
     public void setCapacity(int capacity) {
