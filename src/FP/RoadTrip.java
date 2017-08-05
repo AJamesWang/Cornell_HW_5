@@ -145,8 +145,12 @@ public class RoadTrip extends Thread {
 					roadToTake = bestPath.get(roadsUsedSoFar);
 				} else {
 					MyList<Road> roadsOut = traveler.getCurrentVillage().getRoadsOut();
-					int randomIndex = rn.nextInt(roadsOut.getSize());
-					roadToTake = roadsOut.get(randomIndex);
+					if (roadsOut.getSize() > 0) {
+						int randomIndex = rn.nextInt(roadsOut.getSize());
+						roadToTake = roadsOut.get(randomIndex);
+					} else { // dead end
+						break;
+					}
 				}
 
 				nextVillage = map.getVillage(roadToTake.getToID());
@@ -188,14 +192,25 @@ public class RoadTrip extends Thread {
 							((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
 							+ " sim time.");
 				}
-			} else {
-				// if you get here, you never made it to the destination. sad.
+			} else if (totalCost >= MAX_TRIP_COST) {
+				// you hit max cost before arriving at destination
 				System.out.println("**Road Trip Out of Gas! " + traveler.getName() + 
 						" wanted to go from " + startVillage.getName() + " to " +
 						destVillage.getName() + " but exceeded max trip cost of " + 
 						+ MAX_TRIP_COST + " using " + 
 						((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
 						+ " sim time.");
+			}
+			else {
+				// you came to a dead end village
+				System.out.println("**Road Trip Dead End! " + traveler.getName() + 
+						" wanted to go from " + startVillage.getName() + " to " +
+						destVillage.getName() + " but hit a dead end at " + 
+						"village " + traveler.getCurrentVillage().getName() +
+						".  Used " + 
+						((System.currentTimeMillis() - startTime)/SIMULATION_TIME_STEP) 
+						+ " sim time.");
+
 			}
 			// remove the traveler from any road or village it is on to
 			// avoid infinite traffic jams.
