@@ -296,6 +296,11 @@ public class MapGUI extends JFrame {
             return villages;
         }
 
+        //ugly, I know. Allows GnomeFrame to reuse villageListener.promptGnomeInfo();
+        public VillageInfoPanel(){
+            villageListener=new VillageListener();
+        }
+
         public VillageInfoPanel(ActionEvent e) {
             villageListener = new VillageListener();
 
@@ -389,8 +394,8 @@ public class MapGUI extends JFrame {
 
         class VillageListener implements ActionListener {
 
-            // name, colour, VIP level, ID
-            private Object[] promptGnomeInfo(Gnome gnome) {
+            // name, colour, VIP level
+            public Object[] promptGnomeInfo(Gnome gnome) {
                 if (gnome == null) {
                     gnome = new Gnome("", null, 0, -1);
                 }
@@ -559,7 +564,7 @@ public class MapGUI extends JFrame {
             }
 
             private void inspectGnome(ActionEvent e) {
-                String input=JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Deletion",
+                String input=JOptionPane.showInputDialog(mapGUI, "Gnome ID?", "Gnome Inspection",
                                 JOptionPane.QUESTION_MESSAGE);
                 if(input!=null){
                     int id = Integer.parseInt(input);
@@ -601,10 +606,12 @@ public class MapGUI extends JFrame {
 
         SearchPanel searchPanel;
         JPanel mainPanel;
+        GnomeButtonListener gnomeButtonListener;
 
         public GnomeFrame(){
-            this.setSize(400,400);
+            this.setSize(500,500);
             this.setLayout(new BorderLayout());
+            gnomeButtonListener=new GnomeButtonListener();
 
             searchPanel=new SearchPanel();
             this.add(searchPanel, BorderLayout.NORTH);
@@ -630,7 +637,7 @@ public class MapGUI extends JFrame {
 
                 @Override
                 public void windowActivated(WindowEvent e){
-
+                    refreshGnomeFrame();
                 }
 
                 @Override
@@ -659,18 +666,20 @@ public class MapGUI extends JFrame {
             Color _color=searchPanel.color.getData();
             int statusMin=(Integer)searchPanel.statusMin.getValue();
             int statusMax=(Integer)searchPanel.statusMax.getValue();
+            int _village=(Integer)searchPanel.village.getValue();
 
 
             Gnome.NumberRange id=new Gnome.NumberRange(idMin<1?null:idMin, idMax<1?null:idMax);
             Gnome.StringRange name=new Gnome.StringRange(_name);
             Gnome.ColorRange color=new Gnome.ColorRange(_color);
             Gnome.NumberRange status=new Gnome.NumberRange(statusMin<1?null:statusMin, statusMax<1?null:statusMax);
+            Gnome.NumberRange village=new Gnome.NumberRange(_village<1?null:_village, _village<1?null:_village);
 
             if(mainPanel!=null){
                 this.getContentPane().remove(mainPanel);
                 this.validate();
             }
-            GnomeInfoPanel gnomeInfoPanel=new GnomeInfoPanel(id, name, color, status);
+            GnomeInfoPanel gnomeInfoPanel=new GnomeInfoPanel(id, name, color, status, village);
             JScrollPane scrollPane=new JScrollPane(gnomeInfoPanel);
             mainPanel=new JPanel();
             mainPanel.add(scrollPane);
@@ -687,6 +696,7 @@ public class MapGUI extends JFrame {
             DataButton<Color> color;
             JSpinner statusMin;
             JSpinner statusMax;
+            JSpinner village;
 
             public SearchPanel(){
                 this.setLayout(new GridLayout(2, 6));
@@ -697,6 +707,7 @@ public class MapGUI extends JFrame {
                 add(new JLabel("Color Filter"));
                 add(new JLabel("Min Status"));
                 add(new JLabel("Max Status"));
+                add(new JLabel("Village ID"));
 
                 idMin=new JSpinner();
                 SpinnerNumberModel idMinModel=new SpinnerNumberModel();
@@ -775,6 +786,20 @@ public class MapGUI extends JFrame {
                     }
                 });
                 add(statusMax);
+
+                village=new JSpinner();
+                SpinnerNumberModel villageModel=new SpinnerNumberModel();
+                villageModel.setMinimum(-1);
+                villageModel.setValue(-1);
+                village.setModel(villageModel);
+                village.addChangeListener(new ChangeListener(){
+                    @Override
+                    public void stateChanged(ChangeEvent e){
+                        refreshGnomeFrame();
+                    }
+                });
+                add(village);
+
                 addKeyListener(mapListener);
             }
         }
@@ -783,9 +808,10 @@ public class MapGUI extends JFrame {
 
             //@todo:implement strictness
             //if strict: follows all restrictions         if not strict: follows at least 1 restriction
-            public GnomeInfoPanel(Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange, Gnome.NumberRange statusRange){
+            public GnomeInfoPanel(Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange
+                                  , Gnome.NumberRange statusRange, Gnome.NumberRange villageRange){
                 //id, name, color, VIP
-                setLayout(new GridLayout(0, 4));
+                setLayout(new GridLayout(0, 5));
 
                 JLabel id=new JLabel("ID");
                 id.setBorder(BorderFactory.createLineBorder(Color.black));
@@ -795,45 +821,84 @@ public class MapGUI extends JFrame {
                 color.setBorder(BorderFactory.createLineBorder(Color.black));
                 JLabel status=new JLabel("VIP Status");
                 status.setBorder(BorderFactory.createLineBorder(Color.black));
+                JLabel village=new JLabel("Village");
+                village.setBorder(BorderFactory.createLineBorder(Color.black));
+
 
                 add(id);
                 add(name);
                 add(color);
                 add(status);
+                add(village);
 
                 LinkedList<Gnome> gnomes=convertMyList(map.getGnomes());
                 for(Object obj:gnomes.toArray()){
                     Gnome gnome=(Gnome)obj;
-                    this.addGnome(gnome, idRange, nameRange, colorRange, statusRange);
+                    this.addGnome(gnome, idRange, nameRange, colorRange, statusRange, villageRange);
                 }
 
                 addKeyListener(mapListener);
             }
 
-            private void addGnome(Gnome gnome, Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange, Gnome.NumberRange statusRange){
+            private void addGnome(Gnome gnome, Gnome.NumberRange idRange, Gnome.StringRange nameRange, Gnome.ColorRange colorRange
+                                , Gnome.NumberRange statusRange, Gnome.NumberRange villageRange){
                 int _id=gnome.getID();
                 String _name=gnome.getName();
                 Color _color=gnome.getFavColor();
                 int _status=gnome.getVIPLevel();
+                int _village=gnome.getCurrentVillage().getID();
                 if(idRange.contains(_id) && nameRange.contains(_name) 
-                   && colorRange.contains(_color) && statusRange.contains(_status)){
+                   && colorRange.contains(_color) && statusRange.contains(_status) && villageRange.contains(_village)){
 
-                    JLabel id=new JLabel(_id+"");
+                    DataButton<Gnome> id=new DataButton<Gnome>(_id+"");
                     id.setBorder(BorderFactory.createLineBorder(Color.black));
-                    JLabel name=new JLabel(_name);
+                    id.setData(gnome);
+                    id.addActionListener(gnomeButtonListener);
+
+                    DataButton<Gnome> name=new DataButton<Gnome>(_name);
                     name.setBorder(BorderFactory.createLineBorder(Color.black));
-                    JLabel color=new JLabel();
+                    name.setData(gnome);
+                    name.addActionListener(gnomeButtonListener);
+
+                    DataButton<Gnome> color=new DataButton<Gnome>();
                     color.setBackground(_color);
                     color.setOpaque(true);
                     color.setBorder(BorderFactory.createLineBorder(Color.black));
-                    JLabel status=new JLabel(_status+"");
+                    color.setData(gnome);
+                    color.addActionListener(gnomeButtonListener);
+
+                    DataButton<Gnome> status=new DataButton<Gnome>(_status+"");
                     status.setBorder(BorderFactory.createLineBorder(Color.black));
+                    status.setData(gnome);
+                    status.addActionListener(gnomeButtonListener);
+
+                    DataButton<Gnome> village=new DataButton<Gnome>(_village+"");
+                    village.setBorder(BorderFactory.createLineBorder(Color.black));
+                    village.setData(gnome);
+                    village.addActionListener(gnomeButtonListener);
 
                     add(id);
                     add(name);
                     add(color);
                     add(status);
+                    add(village);
                 }
+            }
+        }
+
+        class GnomeButtonListener implements ActionListener{
+            VillageInfoPanel vip=new VillageInfoPanel();
+            @Override
+            public void actionPerformed(ActionEvent e){
+                DataButton<Gnome> db=(DataButton<Gnome>) e.getSource();
+                // name, colour, VIP level
+                Gnome gnome=db.getData();
+                System.out.println("here");
+                Object[] info=vip.villageListener.promptGnomeInfo(db.getData());
+                gnome.setName((String)info[0]);
+                gnome.setFavColor((Color)info[1]);
+                gnome.setVIPLevel((Integer)info[2]);
+                refreshGnomeFrame();
             }
         }
     }
