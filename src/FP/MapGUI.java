@@ -39,9 +39,6 @@ import datastructures.LinkedList;
 import datastructures.Tuple;
 
 /*@todo:
-  make separate GnomeFrame
-      Search for gnomes
-  show gnomes on road
   let gnomes move randomly or shift to adjacent village
   make pause button
   Make MST
@@ -90,6 +87,7 @@ public class MapGUI extends JFrame {
         // button and associated village
         LinkedList<Tuple<JButton, Village>> villages;
         HashMap<Village, LinkedList<Gnome>> villageGnomes;
+        HashMap<Road, LinkedList<Gnome>> roadGnomes;
         HashMap<Village, LinkedList<Gnome>> emmigratingGnomes;
         HashMap<Village, LinkedList<Gnome>> immigratingGnomes;
 
@@ -137,12 +135,13 @@ public class MapGUI extends JFrame {
                     add(villageButton);
                 }
             }
-
         }
 
         protected void updateGnomes() {
             MyList<Gnome> gnomes = map.getGnomes();
             villageGnomes = new HashMap<Village, LinkedList<Gnome>>();
+            roadGnomes = new HashMap<Road, LinkedList<Gnome>>();
+            // v these are currently unused
             immigratingGnomes = new HashMap<Village, LinkedList<Gnome>>();
             emmigratingGnomes = new HashMap<Village, LinkedList<Gnome>>();
             // fills maps w/ empty lists tagged w/ every road
@@ -150,6 +149,12 @@ public class MapGUI extends JFrame {
                 villageGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
                 immigratingGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
                 emmigratingGnomes.put(villages.get(i).getB(), new LinkedList<Gnome>());
+            }
+
+            for(int i=0 ; i < map.getRoads().getSize(); i++){
+                if(map.getRoads().get(i)!=null){
+                    roadGnomes.put(map.getRoads().get(i), new LinkedList<Gnome>());
+                }
             }
 
             // tags every gnome w/ village or road, puts in respective map
@@ -163,6 +168,7 @@ public class MapGUI extends JFrame {
                     villageGnomes.get(village).add(gnome);
                 } else if (gnome.getCurrentRoad() != null) {
                     Road road = gnome.getCurrentRoad();
+                    roadGnomes.get(road).add(gnome);
                     immigratingGnomes.get(map.getVillage(road.getToID())).add(gnome);
                     emmigratingGnomes.get(map.getVillage(road.getFromID())).add(gnome);
                 }
@@ -227,6 +233,27 @@ public class MapGUI extends JFrame {
                     }
                 }
             }
+
+            for (Road road : roadGnomes.keySet()){
+                LinkedList<Gnome> gnomes = roadGnomes.get(road);
+                int gnomeCount = gnomes.getLength();
+                if(gnomeCount > 0) {
+                    Village from=map.getVillage(road.getFromID());
+                    Village to=map.getVillage(road.getToID());
+
+                    int size = Gnome.MAX_SIZE*2;
+                    int x = (to.getX()+from.getX())/2;
+                    int y = (to.getY()+from.getY())/2;
+                    int dy = (to.getY()-from.getY()) * (size+1)/(to.getX()-from.getX());
+                    for (int i = 0; i < gnomeCount; i++) {
+                        g.setColor(gnomes.get(i).getFavColor());
+                        g.fillOval(x, y, size, size);
+                        x += size+1;
+                        y += dy;
+                    }
+
+                }
+            }
         }
 
         @Override
@@ -256,22 +283,27 @@ public class MapGUI extends JFrame {
 
             addVillage = new JButton("Add Village (q)");
             addVillage.addActionListener(mapListener);
+            addVillage.addKeyListener(mapListener);
             add(addVillage);
 
             delVillage = new JButton("Delete Village (w)");
             delVillage.addActionListener(mapListener);
+            delVillage.addKeyListener(mapListener);
             add(delVillage);
 
             addRoad = new JButton("Add Road (e)");
             addRoad.addActionListener(mapListener);
+            addRoad.addKeyListener(mapListener);
             add(addRoad);
 
             delRoad = new JButton("Delete Road (r)");
             delRoad.addActionListener(mapListener);
+            delRoad.addKeyListener(mapListener);
             add(delRoad);
 
             viewGnomes = new JButton("Gnomes");
             viewGnomes.addActionListener(mapListener);
+            viewGnomes.addKeyListener(mapListener);
             add(viewGnomes);
 
             addKeyListener(mapListener);
@@ -520,7 +552,7 @@ public class MapGUI extends JFrame {
                                     roadTripOld.interrupt();
                                 gnomeFinal.getCurRoadTrip().start();
                             } else{
-                                roadTripNew.interrupt();
+                                // roadTripNew.interrupt();
                             }
                         }
                     });
@@ -821,7 +853,7 @@ public class MapGUI extends JFrame {
                 color.setBorder(BorderFactory.createLineBorder(Color.black));
                 JLabel status=new JLabel("VIP Status");
                 status.setBorder(BorderFactory.createLineBorder(Color.black));
-                JLabel village=new JLabel("Village");
+                JLabel village=new JLabel("Location");
                 village.setBorder(BorderFactory.createLineBorder(Color.black));
 
 
@@ -846,7 +878,12 @@ public class MapGUI extends JFrame {
                 String _name=gnome.getName();
                 Color _color=gnome.getFavColor();
                 int _status=gnome.getVIPLevel();
-                int _village=gnome.getCurrentVillage().getID();
+                int _village;
+                if(gnome.getCurrentVillage()!=null){
+                    _village=gnome.getCurrentVillage().getID();
+                } else{
+                    _village=-1;
+                }
                 if(idRange.contains(_id) && nameRange.contains(_name) 
                    && colorRange.contains(_color) && statusRange.contains(_status) && villageRange.contains(_village)){
 
@@ -854,11 +891,13 @@ public class MapGUI extends JFrame {
                     id.setBorder(BorderFactory.createLineBorder(Color.black));
                     id.setData(gnome);
                     id.addActionListener(gnomeButtonListener);
+                    id.addKeyListener(mapListener);
 
                     DataButton<Gnome> name=new DataButton<Gnome>(_name);
                     name.setBorder(BorderFactory.createLineBorder(Color.black));
                     name.setData(gnome);
                     name.addActionListener(gnomeButtonListener);
+                    name.addKeyListener(mapListener);
 
                     DataButton<Gnome> color=new DataButton<Gnome>();
                     color.setBackground(_color);
@@ -866,16 +905,24 @@ public class MapGUI extends JFrame {
                     color.setBorder(BorderFactory.createLineBorder(Color.black));
                     color.setData(gnome);
                     color.addActionListener(gnomeButtonListener);
+                    color.addKeyListener(mapListener);
 
                     DataButton<Gnome> status=new DataButton<Gnome>(_status+"");
                     status.setBorder(BorderFactory.createLineBorder(Color.black));
                     status.setData(gnome);
                     status.addActionListener(gnomeButtonListener);
+                    status.addKeyListener(mapListener);
 
-                    DataButton<Gnome> village=new DataButton<Gnome>(_village+"");
+                    DataButton<Gnome> village;
+                    if(_village==-1){
+                        village=new DataButton<Gnome>(_village+"");
+                    } else{
+                        village=new DataButton<Gnome>("On Road");
+                    }
                     village.setBorder(BorderFactory.createLineBorder(Color.black));
                     village.setData(gnome);
                     village.addActionListener(gnomeButtonListener);
+                    village.addKeyListener(mapListener);
 
                     add(id);
                     add(name);
@@ -893,11 +940,12 @@ public class MapGUI extends JFrame {
                 DataButton<Gnome> db=(DataButton<Gnome>) e.getSource();
                 // name, colour, VIP level
                 Gnome gnome=db.getData();
-                System.out.println("here");
                 Object[] info=vip.villageListener.promptGnomeInfo(db.getData());
-                gnome.setName((String)info[0]);
-                gnome.setFavColor((Color)info[1]);
-                gnome.setVIPLevel((Integer)info[2]);
+                if(info!=null){
+                    gnome.setName((String)info[0]);
+                    gnome.setFavColor((Color)info[1]);
+                    gnome.setVIPLevel((Integer)info[2]);
+                }
                 refreshGnomeFrame();
             }
         }
