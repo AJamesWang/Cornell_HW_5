@@ -161,7 +161,7 @@ public class Gnome implements Comparable {
     	// now we should be in a Village, but let's be careful
         if (inVillage != null) {
             roadTrip = new RoadTrip(map, this, this.inVillage, newDest, newMode);
-            roadTrip.start();
+            //roadTrip.start(); add it back in if u want it to start here
         } else {
             // this should never happen, but just in case...
         	System.out.println("Can't start new trip for " + name + 
