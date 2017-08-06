@@ -107,6 +107,10 @@ public class Village {
         return (currentPop >= capacity);
     }
 
+    public int getCurrentPop() {
+    	return this.currentPop;
+    }
+    
     public int getCapacity(){
         return this.capacity;
     }
@@ -115,10 +119,14 @@ public class Village {
         this.capacity = capacity;
     }
 
-    // add g to our village
+    // add g to our village if it's not already here. important
+    // to check because we don't want a newly created RoadTrip to
+    // insert him in the position he's already in, breaking population.
     public synchronized void addOccupant(Gnome g) {
-        this.currentPop++;
-        g.setInVillage(this);
+    	if (g.getCurrentVillage() != this) {
+    		this.currentPop++;
+    		g.setInVillage(this);
+    	}
     }
 
     // currently ignores g and just decreases population
@@ -163,3 +171,4 @@ public class Village {
     
     
 }
+
