@@ -39,12 +39,12 @@ import datastructures.LinkedList;
 import datastructures.Tuple;
 
 /*@todo:
-  let gnomes move randomly or shift to adjacent village
-  make pause button
   Make MST
   Make friend graph
 
+  make pause button
   draw id when painting village
+  let gnomes move randomly or shift to adjacent village
   make road toll/capacity clearer
   limit color choices to clearly distinguishable colours
 */

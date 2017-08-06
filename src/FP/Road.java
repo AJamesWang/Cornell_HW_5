@@ -1,6 +1,6 @@
 package FP;
 
-public class Road {
+public class Road implements Comparable<Road>{
     private int         fromID; // the ID# of the origination node
     private int         toID;   // the ID# of the destination node
     private int         weight; // weight assigned to edge
@@ -15,7 +15,7 @@ public class Road {
     // on the Road.
     private RankedQueue<Gnome> waitingList;
     
-    public Road(int fromThisNodeID, int toThisNodeID, int withThisWeight, int theID) {
+    public Road(int fromThisNodeID, int toThisNodeID, int withThisWeight, int theID){
         this.fromID = fromThisNodeID;
         this.toID = toThisNodeID;
         this.weight = withThisWeight;
@@ -104,6 +104,11 @@ public class Road {
     	return waitingList.getPosition(g) + 1;
     }
     
+    @Override
+    public int compareTo(Road road){
+        return this.getWeight()-road.getWeight();
+    }
+
 }
 
 

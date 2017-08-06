@@ -1,6 +1,9 @@
 package FP;
 
 import java.awt.Color;
+import java.util.HashMap;
+import java.util.HashSet;
+import datastructures.LinkedList;
 
 public class Map {
     /* GUI */
@@ -304,5 +307,67 @@ public class Map {
         }
 
         return theShortestPath;
+    }
+
+    //modified version of Kruskal's algorithm.
+    //instead of checking for cycles, checks for reduntant connections.
+    //doesn't lead to optimal solution, but strictly dominates plain old kruskal's algorithm (I think)
+    private HashMap<Village, HashSet<Village>> generateConnections(HashSet<Road> addedRoads){
+        HashMap<Village, HashSet<Village>> connections = new HashMap<Village, HashSet<Village>>();
+        for(int i=0;i<villages.getSize(); i++){
+            if(villages.get(i)!=null){
+                connections.put(villages.get(i), new HashSet<Village>());
+            }
+        }
+        for(Village village:connections.keySet()){
+            HashSet<Village> villagesReached=new HashSet<Village>();
+            villagesReached.add(village);
+            LinkedList<Road> toTravel=new LinkedList<Road> ();
+
+            for(int i=0;i<village.getRoadsOut().getSize();i++){
+                if(village.getRoadsOut().get(i)!=null){
+                    toTravel.qPush(village.getRoadsOut().get(i));
+                }
+            }
+
+            while(toTravel!=null){
+                Road road=toTravel.qPop();
+                Village curVillage=this.getVillage(road.getToID());
+
+                if(!villagesReached.contains(curVillage)){
+                    //if curVillage can reach a village, then root village can reach that village
+                    for(Object obj:connections.get(curVillage)){
+                        Village reachableVillage=(Village)obj;
+                        villagesReached.add(reachableVillage);
+                    }
+                }
+
+                for(int i=0;i<curVillage.getRoadsOut().getSize();i++){
+                    if(curVillage.getRoadsOut().get(i)!=null){
+                        toTravel.qPush(curVillage.getRoadsOut().get(i));
+                    }
+                }
+            }
+
+            connections.put(village, villagesReached);
+        }
+
+        return connections;
+    }
+
+    //@todo: test
+    public HashSet<Road> chooseNewRoads(Road[] newRoads){
+        java.util.Arrays.sort(newRoads);
+        HashSet<Road> addedRoads=new HashSet<Road>();
+        HashMap<Village, HashSet<Village>> connections=generateConnections(addedRoads);
+        for(Road road:newRoads){
+            Village from=this.getVillage(road.getFromID());
+            Village to=this.getVillage(road.getToID());
+            if(!connections.get(from).contains(to)){
+                addedRoads.add(road);
+                connections=generateConnections(addedRoads);
+            }
+        }
+        return addedRoads;
     }
 }
