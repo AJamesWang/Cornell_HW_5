@@ -20,10 +20,11 @@ public class RoadTrip extends Thread {
 	}
 
 	// use these to specify the travel mode
-	public static final int SIMULATION_TIME_STEP = 250; // one simulation step in ms
+	public static final int SIMULATION_TIME_STEP = 125; // one simulation step in ms
 	public static final int LAZY_MODE = 0;
 	public static final int EFFICIENT_MODE = 1;
-	public static final int MAX_TRIP_COST = 100; // if you don't get to dest
+	public static final int WANDER_MODE = 2; // wander with no destination
+	public static final int MAX_TRIP_COST = 10000; // if you don't get to dest
 												 // in <= this cost, give up.
 
 	// a RoadTrip object's attributes
@@ -41,6 +42,7 @@ public class RoadTrip extends Thread {
 	// create a new RoadTrip. 
 	public RoadTrip(Map theMap, Gnome theTraveler, 
 			Village start, Village destination, int theMode) {
+
 		this.map = theMap;
 		this.traveler = theTraveler;
 		this.mode = theMode;
@@ -53,6 +55,7 @@ public class RoadTrip extends Thread {
 		} else {
 			bestPath = null;
 		}
+
 	}
 	
 	//@modified
@@ -88,7 +91,7 @@ public class RoadTrip extends Thread {
 	// returns the mode at the end, whether it was changed or not.
 	// don't use this once a RoadTrip has started!
 	public int setMode(int newMode) {
-		if (newMode == LAZY_MODE || newMode == EFFICIENT_MODE) {
+		if (newMode >= LAZY_MODE && newMode <= WANDER_MODE) {
 			this.mode = newMode;
 		}
 		if (newMode == EFFICIENT_MODE) {
@@ -117,16 +120,24 @@ public class RoadTrip extends Thread {
 						" to " + destVillage.getName() + ", VIP: " + 
 						traveler.getVIPLevel() +
 						". Should take " + bestPath.getSize() + " roads.");
-			} else {
+			} else if (mode == LAZY_MODE) {
 				System.out.println("**Starting LAZY Road Trip: " + 
 						traveler.getName() + 
 						" is going from " + startVillage.getName() + 
 						" to " + destVillage.getName() + ", VIP: " + 
 						traveler.getVIPLevel() +
 						". Good luck!");
+			} else {
+				System.out.println("**Starting WANDER Road Trip: " + 
+						traveler.getName() + 
+						" is wandering from " + startVillage.getName() +
+						" with no destination in mind, VIP: " + 
+						traveler.getVIPLevel() +
+						". Happpy Trails!");
+				
 			}
 
-			Random rn = new Random(); // used for lazy mode
+			Random rn = new Random(); // used for lazy/wander modes
 			Road roadToTake; // this will be the next road to take
 			Village nextVillage; // this will be the next village we head to
 			startTime = System.currentTimeMillis();
@@ -134,9 +145,13 @@ public class RoadTrip extends Thread {
 			// traveler starts out in the specified village; is not on a road yet
 			startVillage.addOccupant(traveler);
 
-			// the trip continues until we have arrived at destination
-			while (traveler.getCurrentVillage() != destVillage && 
-					totalCost < MAX_TRIP_COST) {
+			// the trip continues until we have arrived at destination, 
+			// or exceeded max cost, or hit a dead end.
+			// max cost and destination are irrelevant to wandering.
+			// dead end is handled by a break from the loop when found.
+			while (mode == WANDER_MODE ||
+					(traveler.getCurrentVillage() != destVillage && 
+					totalCost < MAX_TRIP_COST)) {
 				
 				// next road to take depends on what travel mode we're in.
 				// LAZY gets a random road out. EFFICIENT gets next road
@@ -176,6 +191,7 @@ public class RoadTrip extends Thread {
 
 			// when we get here, the trip is complete or out of gas. 
 			// print out some trip info.
+			System.out.println("\n");
 			if (traveler.getCurrentVillage() == this.destVillage) {
 				if (mode == EFFICIENT_MODE) {
 					System.out.println("**EFFICIENT Road Trip Complete. " + traveler.getName() + 
@@ -194,7 +210,9 @@ public class RoadTrip extends Thread {
 				}
 			} else if (totalCost >= MAX_TRIP_COST) {
 				// you hit max cost before arriving at destination
-				System.out.println("**Road Trip Out of Gas! " + traveler.getName() + 
+				System.out.println("**Road Trip Out of Gas at Village " +
+						traveler.getCurrentVillage().getName() + "! " + 
+						traveler.getName() + 
 						" wanted to go from " + startVillage.getName() + " to " +
 						destVillage.getName() + " but exceeded max trip cost of " + 
 						+ MAX_TRIP_COST + " using " + 
@@ -212,17 +230,34 @@ public class RoadTrip extends Thread {
 						+ " sim time.");
 
 			}
+			// @modified: you can't just stick gnomes back into different
+			// villages without breaking the queueing, etc. We need to 
+			// just leave them where they finished, but this can result
+			// in permanent backups if the map is crowded.
+			//
 			// remove the traveler from any road or village it is on to
 			// avoid infinite traffic jams.
+			//
 			// @modified: gnomes don't just die when they fail a roadtrip.
 			// Gnome is placed in most recently reached village
-			if (traveler.getCurrentRoad() != null) {
-				traveler.setInVillage(map.getVillage(traveler.getCurrentRoad().getFromID()));
-			}
-			// if (traveler.getCurrentVillage() != null) {
-			// 	traveler.getCurrentVillage().removeOccupant(traveler);
-			// }
+			//if (traveler.getCurrentRoad() != null) {
+			//	traveler.setInVillage(map.getVillage(traveler.getCurrentRoad().getFromID()));
+			//}
 			
+/*			if (traveler.getCurrentVillage() != null) {
+				traveler.getCurrentVillage().removeOccupant(traveler);
+			 }
+			if (traveler.getCurrentRoad() != null) {
+				traveler.getCurrentRoad().removeOccupant(traveler);
+			 }
+*/			
+			// print out this gnome's travel history
+			System.out.print(traveler.getName() + " has visited: ");
+			for (int j = 0; j < traveler.getVillageHistory().getSize(); j++) {
+				System.out.print(traveler.getVillageHistory().get(j).getName() + " ");
+			}
+			System.out.println(".\n");
+		
 		} catch (InterruptedException e) {
 			System.out.println(traveler.getName() + "'s travel thread interrupted.");
 			return;
@@ -238,23 +273,28 @@ public class RoadTrip extends Thread {
 	void tryRoad(Gnome g, Road r) throws InterruptedException {
 		r.requestEntry(g);
 		
+		// notify if you didnt get in right away and are in q
+		if (g.getCurrentRoad() != r) {
+			System.out.println("!!!Traffic Jam!!! " + g.getName() + 
+					" waiting to get onto Road " + r.getID() +
+					", position in queue: " + r.getPositionInQueue(g));
+		}
+		
 		// we may have to wait in a queue before actually getting
 		// on road. wait here until we see that the Road has
 		// allowed the Gnome to enter.
 		//
 		while (g.getCurrentRoad() != r) {
-			System.out.println("!!!Traffic Jam!!! " + g.getName() + 
-					" waiting to get onto Road " + r.getID() +
-					", position in queue: " + r.getPositionInQueue(g));
-				mapGUI.refresh();
-				Thread.sleep(SIMULATION_TIME_STEP);
+				if (mapGUI != null) mapGUI.refresh();
+				//Thread.sleep(SIMULATION_TIME_STEP);
+				synchronized(g) {g.wait();}
 			}
 		System.out.println(g.getName() + " now on road " + r.getID());
 
 		// by the time you get here, you are now on the road. Sleep
 		// an amount of time proportional to road weight to simulate
 		// travel time.
-		mapGUI.refresh();
+		if (mapGUI != null) mapGUI.refresh(); // allow testing w/o gui
 		Thread.sleep(r.getWeight() * SIMULATION_TIME_STEP);
 	}
 
@@ -266,23 +306,31 @@ public class RoadTrip extends Thread {
 	void tryVillage(Gnome g, Village v) throws InterruptedException {
 		v.requestEntry(g);
 		
+		// notify if you didn't get into v and are waiting in q
+		if (g.getCurrentVillage() != v) {
+		System.out.println("!!!Village Jam!!! " + g.getName() + 
+				" waiting to get into Village " + v.getName() +
+				", position in queue: " + v.getPositionInQueue(g));
+		};
+
 		// we may have to wait in a queue before actually getting
 		// in. wait here until we see that the Village has
 		// allowed the Gnome to enter.
 		//
 		while (g.getCurrentVillage() != v) {
-			System.out.println("!!!Village Jam!!! " + g.getName() + 
-					" waiting to get into Village " + v.getName() +
-					", position in queue: " + v.getPositionInQueue(g));
-				mapGUI.refresh();
-				Thread.sleep(SIMULATION_TIME_STEP);
+			if(mapGUI != null) mapGUI.refresh();
+			//Thread.sleep(SIMULATION_TIME_STEP);
+			synchronized(g) {g.wait();}
 			}
-		System.out.println(g.getName() + " now in Village " + v.getID());
+		System.out.println(g.getName() + " now in Village " + 
+			map.getVillage(v.getID()).getName());
 
 		// by the time you get here, you are now in Village. Sleep
 		// one second to simulate
 		// travel time through village.
-		mapGUI.refresh();
+		if (mapGUI != null) mapGUI.refresh(); // for testing w/o gui
+		
+		// time to pass through a village is one sim time step
 		Thread.sleep(SIMULATION_TIME_STEP);
 	}
 
