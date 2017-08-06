@@ -27,7 +27,11 @@ public class Map {
     
     
     /* datastructure */
-
+   //BSTs for efficient search of gnomes
+    private BST<Gnome> nameTree = new BST<Gnome>();
+    private BST<Gnome> vipTree = new BST<Gnome>();
+    private BST<Gnome> colorTree = new BST<Gnome>();
+    
     private MyList<Village> villages; // all the nodes in the graph
     private MyList<Road> roads;
     private MyList<Gnome> gnomes;
@@ -130,6 +134,9 @@ public class Map {
     public synchronized int addGnome(String theName, Color theFavColor, int theVIPLevel) {
         Gnome newGnome = new Gnome(theName, theFavColor, theVIPLevel, nextGnomeID++);
         gnomes.add(newGnome);
+        nameTree.insert(newGnome, newGnome.getName());
+        vipTree.insert(newGnome, newGnome.getVIPLevel());
+        colorTree.insert(newGnome, newGnome.getFavColor());        
         return newGnome.getID();
     }
 
@@ -370,4 +377,17 @@ public class Map {
         }
         return addedRoads;
     }
+   
+    //searches for matching gnomes using the corresponding BST
+   public MyList<Gnome> searchByName(String name){
+	   return nameTree.findGnomes(name);
+   }
+   
+   public MyList<Gnome> searchByVIP(int vip){
+   		return vipTree.findGnomes(vip);
+   }
+   
+   public MyList<Gnome> searchByColor(Color c){
+	   return colorTree.findGnomes(c);
+   }
 }

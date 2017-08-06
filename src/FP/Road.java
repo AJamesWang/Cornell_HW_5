@@ -52,14 +52,26 @@ public class Road implements Comparable<Road>{
         return (currentPop >= capacity);
     }
     
+    public int getCurrentPop() {
+    	return this.currentPop;
+    }
+    
+    public int getCapacity() {
+    	return this.capacity;
+    }
+    
     public void setCapacity(int capacity) {
         this.capacity = capacity;
     }
     
-    // put g into our road's population
+    // put g into our road's population if not 
+    // already here. adding same Gnome twice will
+    // muck up population count.
     public synchronized void addOccupant(Gnome g) {
-        this.currentPop++;
-        g.setOnRoad(this);
+    	if (g.getCurrentRoad() != this) {
+    		this.currentPop++;
+    		g.setOnRoad(this);
+    	}
     }
 
     // someone is leaving road. if there's a queue,
@@ -110,6 +122,3 @@ public class Road implements Comparable<Road>{
     }
 
 }
-
-
-

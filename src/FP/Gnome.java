@@ -119,10 +119,12 @@ public class Gnome implements Comparable {
     public synchronized void setOnRoad(Road newRoad)  {
     	if (newRoad != null) {
     		onRoad = newRoad;
+    		synchronized (this) { this.notifyAll(); }
     		if (inVillage != null) {
     			inVillage.removeOccupant(this);
     			inVillage = null;
     		}
+    		synchronized (this) { this.notifyAll(); }
         }
     }
 
@@ -130,15 +132,40 @@ public class Gnome implements Comparable {
         return this.roadTrip;
     }
 
-    public void setNewRoadTrip(Map map, Village destination, int mode){
-        if (this.inVillage!=null){
-            this.roadTrip=new RoadTrip(map, this, this.inVillage, destination, mode);
-        }
-        else {
-            //@todo: delete current roadTrip
-            //teleports gnome to end of current road
-            this.inVillage=map.getVillage(this.onRoad.getToID());
-            this.roadTrip=new RoadTrip(map, this, this.inVillage, destination, mode);
+    // tried to make this work safely...
+    // kills any current Road trip. If Gnome is in a village,
+    // starts new RoadTrip from there to new destination.
+    // If Gnome is on a road, we force the Gnome into 
+    // the Village at the end of the Road, a and start
+    // the new RoadTrip from there. 
+    // if he's on neither a Road or Village... not supposed to
+    // happen, but put an error message in just in case.
+    //
+    public void setNewRoadTrip(Map map, Village newDest, int newMode) {
+    	
+    	// stop current RoadTrip thread if we have one
+    	if (roadTrip != null) {
+    		roadTrip.interrupt();
+    	}
+    	
+    	// now put us on a new trip. 
+    	// force Gnome to end of current Road if it's on a Road.
+    	// we don't care if others are waiting to get in, or even
+    	// if we temporarily put the population over capacity--we just
+    	// jump right into the Village.
+    	//
+    	if (onRoad != null) {
+    		setInVillage(map.getVillage(onRoad.getToID()));
+    	}
+    	
+    	// now we should be in a Village, but let's be careful
+        if (inVillage != null) {
+            roadTrip = new RoadTrip(map, this, this.inVillage, newDest, newMode);
+            //roadTrip.start(); add it back in if u want it to start here
+        } else {
+            // this should never happen, but just in case...
+        	System.out.println("Can't start new trip for " + name + 
+        			". Cannot locate in Village or on Road.");
         }
     }
 
@@ -154,10 +181,12 @@ public MyList<Village> getVillageHistory() {
     	if (newVillage != null) {
     		inVillage = newVillage;
     		villageHistory.addIfNew(newVillage);
+    		synchronized (this) { this.notifyAll(); }
     		if (onRoad != null) {
     			onRoad.removeOccupant(this);
     			onRoad = null;
     		}
+    		synchronized (this) { this.notifyAll(); }
         }
     }
     
