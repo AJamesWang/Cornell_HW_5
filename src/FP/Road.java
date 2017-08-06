@@ -121,4 +121,8 @@ public class Road implements Comparable<Road>{
         return this.getWeight()-road.getWeight();
     }
 
+    public String toString(){
+        return "ID: "+this.id+" from "+fromID+" to "+toID;
+    }
+
 }

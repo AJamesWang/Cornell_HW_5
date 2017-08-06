@@ -337,7 +337,7 @@ public class Map {
                 }
             }
 
-            while(toTravel!=null){
+            while(toTravel.getLength()>0){
                 Road road=toTravel.qPop();
                 Village curVillage=this.getVillage(road.getToID());
 
@@ -368,6 +368,8 @@ public class Map {
         HashSet<Road> addedRoads=new HashSet<Road>();
         HashMap<Village, HashSet<Village>> connections=generateConnections(addedRoads);
         for(Road road:newRoads){
+            if(road==null) continue;
+            
             Village from=this.getVillage(road.getFromID());
             Village to=this.getVillage(road.getToID());
             if(!connections.get(from).contains(to)){

@@ -42,6 +42,7 @@ import datastructures.Tuple;
   Make MST
   Make friend graph
 
+  incorporate BST into GUI
   make pause button
   draw id when painting village
   let gnomes move randomly or shift to adjacent village
