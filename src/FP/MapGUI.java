@@ -41,8 +41,6 @@ import datastructures.LinkedList;
 import datastructures.Tuple;
 
 /*@todo:
-  Make MST
-  Make friend graph
 
   incorporate BST into GUI
   make pause button
@@ -219,12 +217,13 @@ public class MapGUI extends JFrame {
                         int y3 = y2 - ((y2 - y1) / ROAD_ARROW_RATIO);
                         arrows.add(new Tuple(road.getWeight(), new Tuple(new Tuple(x3, y3), new Tuple(x2, y2))));
 
-                        ((Graphics2D) g).setStroke(new BasicStroke(road.getWeight()));
+                        ((Graphics2D) g).setStroke(new BasicStroke(road.getWeight(), BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f}, 0.0f));
                         g.setColor(Color.green);
                         g.drawLine(x1, y1, x2, y2);
                     }
                 }
             }
+
             for (int i = 0; i < arrows.getLength(); i++) {
                 int weight = arrows.get(i).getA();
                 Tuple<Integer, Integer> coor3 = arrows.get(i).getB().getA();
@@ -432,10 +431,10 @@ public class MapGUI extends JFrame {
 
                 String name = village.getName();
                 int id = village.getID();
-                LinkedList<Road> roadsIn = convertMyList(village.getRoadsIn());
-                LinkedList<Village> in = extractVillages(roadsIn, true);
-                LinkedList<Road> roadsOut = convertMyList(village.getRoadsOut());
-                LinkedList<Village> out = extractVillages(roadsOut, false);
+                LinkedList<Road> in = convertMyList(village.getRoadsIn());
+                // LinkedList<Village> in = extractVillages(roadsIn, true);
+                LinkedList<Road> out = convertMyList(village.getRoadsOut());
+                // LinkedList<Village> out = extractVillages(roadsOut, false);
                 LinkedList<Gnome> gnomes = mapPanel.villageGnomes.get(village);
 
                 GridLayout layout = new GridLayout(0, 1);

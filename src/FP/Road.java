@@ -122,7 +122,7 @@ public class Road implements Comparable<Road>{
     }
 
     public String toString(){
-        return "ID: "+this.id+" from "+fromID+" to "+toID;
+        return "Vil "+this.getFromID()+" (Toll "+this.weight+")";
     }
 
 }
