@@ -574,18 +574,23 @@ public class MapGUI extends JFrame {
                                 JOptionPane.showMessageDialog(mapGUI, gnomeFinal.getName()+" is currently not on a trip", "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
                             } else{
                                 String name=gnomeFinal.getName();
-                                String speed=roadTrip.getMode()==RoadTrip.LAZY_MODE?"scenic":"direct";
-                                Village destination = roadTrip.getDestination();
                                 Village roadFrom = map.getVillage(gnomeFinal.getCurrentRoad().getToID());
                                 Village roadTo = map.getVillage(gnomeFinal.getCurrentRoad().getFromID());
-                                double progress = roadTrip.getProgress();
                                 long timeTraveled=roadTrip.getTravelTime();
 
-                                String line1=gnomeFinal.getName()+" is on a "+speed+" trip to "+destination.getName()+".\n";
-                                String line2="This gnome is currenly on the road connecting "+roadFrom.getName()+" and "+roadTo.getName()+".\n";
-                                String line3="It (he? she? they? Alas, gnome gender may forever remain a mystery) is currently "+progress+
-                                             " of the way there,\n having traveled for "+timeTraveled+" days.";
-                                JOptionPane.showMessageDialog(mapGUI, line1+line2+line3, "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
+                                if(roadTrip.getMode()==RoadTrip.WANDER_MODE){
+                                    JOptionPane.showMessageDialog(mapGUI, name + " is currently wandering, and has traveled for " + timeTraveled + " days");
+                                } else{
+                                    String speed=roadTrip.getMode()==RoadTrip.LAZY_MODE?"scenic":"direct";
+                                    Village destination = roadTrip.getDestination();
+                                    double progress = roadTrip.getProgress();
+
+                                    String line1=name+" is on a "+speed+" trip to "+destination.getName()+".\n";
+                                    String line2="This gnome is currenly on the road connecting "+roadFrom.getName()+" and "+roadTo.getName()+".\n";
+                                    String line3="It (he? she? they? Alas, gnome gender may forever remain a mystery) is currently "+progress+
+                                                 " of the way there,\n having traveled for "+timeTraveled+" days.";
+                                    JOptionPane.showMessageDialog(mapGUI, line1+line2+line3, "Road Trip Info", JOptionPane.PLAIN_MESSAGE);
+                                }
                             }
                         }
                     });
@@ -608,18 +613,23 @@ public class MapGUI extends JFrame {
                             JComboBox villages=new JComboBox(selectionValues);
                             villagesPanel.add(villages);
 
-                            Object[] buttonLabels={"Scenic", "Direct", "Cancel"};
+                            Object[] buttonLabels={"Scenic", "Direct", "Wandering", "Cancel"};
                             int selection=JOptionPane.showOptionDialog(mapGUI, villagesPanel, "Road Trip Planning!"
                                           ,JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttonLabels, JOptionPane.YES_OPTION);
 
                             RoadTrip roadTripNew=null;
-                            if(selection==JOptionPane.YES_OPTION){
+                            if(selection==0){
                                 gnomeFinal.setNewRoadTrip(map, (Village)villages.getSelectedItem(),RoadTrip.LAZY_MODE);
                                 if(roadTripOld!=null)
                                     roadTripOld.interrupt();
                                 gnomeFinal.getCurRoadTrip().start();
-                            } else if(selection==JOptionPane.NO_OPTION){
+                            } else if(selection==1){
                                 gnomeFinal.setNewRoadTrip(map, (Village)villages.getSelectedItem(),RoadTrip.EFFICIENT_MODE);
+                                if(roadTripOld!=null)
+                                    roadTripOld.interrupt();
+                                gnomeFinal.getCurRoadTrip().start();
+                            } else if(selection==2){
+                                gnomeFinal.setNewRoadTrip(map, (Village)villages.getSelectedItem(),RoadTrip.WANDER_MODE);
                                 if(roadTripOld!=null)
                                     roadTripOld.interrupt();
                                 gnomeFinal.getCurRoadTrip().start();
