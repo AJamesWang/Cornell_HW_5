@@ -996,7 +996,7 @@ public class MapGUI extends JFrame {
                     status.addKeyListener(mapListener);
 
                     DataButton<Gnome> village;
-                    if(_village==-1){
+                    if(_village!=-1){
                         village=new DataButton<Gnome>(_village+"");
                     } else{
                         village=new DataButton<Gnome>("On Road");
