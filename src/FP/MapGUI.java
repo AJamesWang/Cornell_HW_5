@@ -15,9 +15,11 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowEvent;
+import java.awt.Font;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -44,7 +46,6 @@ import datastructures.Tuple;
 
   incorporate BST into GUI
   make pause button
-  draw id when painting village
   let gnomes move randomly or shift to adjacent village
   make road toll/capacity clearer
   limit color choices to clearly distinguishable colours
@@ -86,6 +87,7 @@ public class MapGUI extends JFrame {
 
     class MapPanel extends JPanel {
         // button and associated village
+        // @todo: refactor witih DataButton
         LinkedList<Tuple<JButton, Village>> villages;
         HashMap<Village, LinkedList<Gnome>> villageGnomes;
         HashMap<Road, LinkedList<Gnome>> roadGnomes;
@@ -202,6 +204,27 @@ public class MapGUI extends JFrame {
                     g.drawLine(x1, y1, x2, y2);
                 }
             }
+
+            if(mapListener.proposedRoads!=null){
+                for(Object obj:mapListener.proposedRoads.toArray()){
+                    Road road=(Road)obj;
+
+                    if (road != null) {
+                        int x1 = map.getVillage(road.getFromID()).getX() + Village.DIAMETER / 2;
+                        int y1 = map.getVillage(road.getFromID()).getY() + Village.DIAMETER / 2;
+                        int x2 = map.getVillage(road.getToID()).getX() + Village.DIAMETER / 2;
+                        int y2 = map.getVillage(road.getToID()).getY() + Village.DIAMETER / 2;
+
+                        int x3 = x2 - ((x2 - x1) / ROAD_ARROW_RATIO);
+                        int y3 = y2 - ((y2 - y1) / ROAD_ARROW_RATIO);
+                        arrows.add(new Tuple(road.getWeight(), new Tuple(new Tuple(x3, y3), new Tuple(x2, y2))));
+
+                        ((Graphics2D) g).setStroke(new BasicStroke(road.getWeight()));
+                        g.setColor(Color.green);
+                        g.drawLine(x1, y1, x2, y2);
+                    }
+                }
+            }
             for (int i = 0; i < arrows.getLength(); i++) {
                 int weight = arrows.get(i).getA();
                 Tuple<Integer, Integer> coor3 = arrows.get(i).getB().getA();
@@ -257,12 +280,55 @@ public class MapGUI extends JFrame {
             }
         }
 
+        private void paintInfo(Graphics g){
+            g.setColor(Color.black);
+            g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 20));
+            switch(mapListener.state){
+                case(MapListener.NEUTRAL):
+                    g.drawString("VIEWING:", 5, 20);
+                    break;
+                case(MapListener.ADD_VILLAGE):
+                    g.drawString("ADD VILLAGE:", 5, 20);
+                    break;
+                case(MapListener.DEL_VILLAGE):
+                    g.drawString("DELETE VILLAGE:", 5, 20);
+                    break;
+                case(MapListener.ADD_ROAD):
+                    g.drawString("ADD ROAD:", 5, 20);
+                    g.drawString("From: "+((mapListener.prev==null)? "":mapListener.prev.toString())+" To:", 5, 20+g.getFontMetrics().getHeight());
+                    break;
+                case(MapListener.DEL_ROAD):
+                    g.drawString("DELETE ROAD:", 5, 20);
+                    g.drawString("From: "+((mapListener.prev==null)? "":mapListener.prev.toString())+" To:", 5, 20+g.getFontMetrics().getHeight());
+                    break;
+                case(MapListener.PROPOSE_ROADS):
+                    g.drawString("PROPOSE ROADS:", 5, 20);
+                    g.drawString("From: "+((mapListener.prev==null)? "":mapListener.prev.toString())+" To:", 5, 20+g.getFontMetrics().getHeight());
+                    break;
+                default:
+                    throw new RuntimeException("Uhhhhh");
+            }
+
+
+            g.setColor(Color.black);
+            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+            for(Object obj:villages.toArray()){
+                Village village=((Tuple<JButton, Village>) obj).getB();
+
+                int id=village.getID();
+                int x=village.getX();
+                int y=village.getY();
+                g.drawString("ID: "+id, x+5, y+Village.DIAMETER/2);
+            }
+        }
+
         @Override
         // not in paintComponent b/c I want to paint over the buttons
         protected void paintChildren(Graphics g) {
             super.paintChildren(g);
             paintRoads(g);
             paintGnomes(g);
+            paintInfo(g);
         }
 
         public Village getVillage(JButton button) {
@@ -277,6 +343,7 @@ public class MapGUI extends JFrame {
         JButton addRoad;
         JButton delRoad;
         JButton viewGnomes;
+        JButton proposeRoads;
 
         public MapButtonPanel() {
             super();
@@ -306,6 +373,11 @@ public class MapGUI extends JFrame {
             viewGnomes.addActionListener(mapListener);
             viewGnomes.addKeyListener(mapListener);
             add(viewGnomes);
+
+            proposeRoads=new JButton("Propose New Roads");
+            proposeRoads.addActionListener(mapListener);
+            proposeRoads.addKeyListener(mapListener);
+            add(proposeRoads);
 
             addKeyListener(mapListener);
         }
@@ -958,11 +1030,13 @@ public class MapGUI extends JFrame {
         private static final int DEL_VILLAGE = 21;
         private static final int ADD_ROAD = 12;
         private static final int DEL_ROAD = 22;
+        private static final int PROPOSE_ROADS = 32;
 
         private int state;
         private Village prev;
         private boolean gnomesFrameIsActive;
         private boolean roadInfoShown;
+        private LinkedList<Road> proposedRoads;//@todo: decide where to put this
 
         public MapListener() {
             this.state = NEUTRAL;
@@ -1020,7 +1094,6 @@ public class MapGUI extends JFrame {
                                                             ,JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{"OK", "Cancel"}, JOptionPane.YES_OPTION);
                     
                     if(response==JOptionPane.YES_OPTION){
-
                         map.addRoad(prev.getID(), next.getID(), (Integer) toll.getValue(), (Integer)size.getValue());
                     }
                 }
@@ -1036,7 +1109,6 @@ public class MapGUI extends JFrame {
             } else {
                 Village next = mapPanel.getVillage((JButton) e.getSource());
                 map.removeRoad(prev.getID(), next.getID());
-                repaint();
                 prev = null;
                 state = NEUTRAL;
             }
@@ -1062,6 +1134,64 @@ public class MapGUI extends JFrame {
 
         }
 
+        private void proposeRoad(ActionEvent e){
+            if (prev == null) {
+                prev = mapPanel.getVillage((JButton) e.getSource());
+            } else{
+                Village next = mapPanel.getVillage((JButton) e.getSource());
+
+
+                if (next == prev) {
+                    JOptionPane.showMessageDialog(mapGUI, "That would be a pointless road", "Foolish Mortal",
+                                    JOptionPane.WARNING_MESSAGE);
+                } else {
+                    //allows for multiple roads connecting the same villages
+                    JPanel roadPanel=new JPanel();
+                    roadPanel.setLayout(new GridLayout(0,1));
+                    JLabel tollLabel=new JLabel("Toll: ");
+                    roadPanel.add(tollLabel);
+                    JSpinner toll=new JSpinner();
+                    SpinnerNumberModel tollModel = new SpinnerNumberModel();
+                    tollModel.setMinimum(1);
+                    tollModel.setMaximum(50);
+                    tollModel.setValue(10);
+                    toll.setModel(tollModel);
+                    roadPanel.add(toll);
+                    JLabel sizeLabel=new JLabel("Maximum Capacity: ");
+                    roadPanel.add(sizeLabel);
+                    JSpinner size=new JSpinner();
+                    SpinnerNumberModel sizeModel = new SpinnerNumberModel();
+                    sizeModel.setMinimum(1);
+                    sizeModel.setValue(100);
+                    size.setModel(sizeModel);
+                    roadPanel.add(size);
+
+                    int response=JOptionPane.showOptionDialog(mapGUI, roadPanel, "Road Creation",JOptionPane.YES_NO_OPTION
+                                                              , JOptionPane.PLAIN_MESSAGE, null, new Object[]{"OK", "Cancel"}, JOptionPane.YES_OPTION);
+                    
+                    if(response==JOptionPane.YES_OPTION){
+                        proposedRoads.add(new Road(prev.getID(), next.getID(), (Integer) toll.getValue(), (Integer)size.getValue(), map.getNextRoadID()));
+                    }
+                }
+                prev=null;
+            }
+        }
+
+        private void evaluateRoads(){
+            Object[] objs=proposedRoads.toArray();
+            Road[] newRoads=new Road[objs.length];
+            for(int i=0; i<objs.length; i++){
+                newRoads[i]=(Road)objs[i];
+            }
+
+            HashSet<Road> acceptedRoads=map.chooseNewRoads(newRoads);
+            // for(Road road:acceptedRoads){
+            //     map.addRoad(road);
+            // }
+            proposedRoads=null;
+            refresh();
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             // if is button
@@ -1083,6 +1213,18 @@ public class MapGUI extends JFrame {
                     viewGnomes(e);
                     state = NEUTRAL;
                     prev = null;
+                } else if (b.equals(buttonPanel.proposeRoads)){
+                    if(state!=PROPOSE_ROADS){
+                        state = PROPOSE_ROADS;
+                        proposedRoads=new LinkedList<Road>();
+                        buttonPanel.proposeRoads.setText("Evaluate Roads");
+                        prev=null;
+                    } else{
+                        evaluateRoads();
+                        buttonPanel.proposeRoads.setText("Propose Roads");
+                        state=NEUTRAL;
+                        prev=null;
+                    }
                 } else { // one of the villages was clicked
                     switch (this.state) {
                         case (NEUTRAL):
@@ -1099,12 +1241,15 @@ public class MapGUI extends JFrame {
                         case (DEL_ROAD):
                             delRoad(e);
                             break;
+                        case (PROPOSE_ROADS):
+                            proposeRoad(e);
+                            break;
                         default:
                             throw new RuntimeException("Uhhhhhh");
                     }
                 }
             }
-            repaint();
+            refresh();
         }
 
         @Override
@@ -1145,6 +1290,7 @@ public class MapGUI extends JFrame {
                 refresh();
             }
             state = NEUTRAL;
+            refresh();
         }
 
         @Override
@@ -1170,6 +1316,7 @@ public class MapGUI extends JFrame {
                     state = NEUTRAL;
                     prev = null;
             }
+            refresh();
         }
 
         /* UNUSED METHODS */
@@ -1199,6 +1346,8 @@ public class MapGUI extends JFrame {
 
     }
 
+
+    //@todo: move to either LinkedList or MyList (probably LinkedList)
     private <T> LinkedList<T> convertMyList(MyList<T> list) {
         LinkedList<T> out = new LinkedList<T>();
         for (int i = 0; i < list.getSize(); i++) {

@@ -22,7 +22,9 @@ public class Map {
         return this.gnomes;
     }
 
-    
+    public int getNextRoadID(){
+        return this.nextRoadID++;
+    }
     
     
     
@@ -159,6 +161,12 @@ public class Map {
     	int theID = addRoad(from, to, weight);
     	roads.get(theID).setCapacity(capacity);
     	return theID;
+    }
+
+    public void addRoad(Road road){
+        villages.get(road.getFromID()).addRoadOut(road);
+        villages.get(road.getToID()).addRoadIn(road);
+        roads.add(road);
     }
 
     // tries to remove road, returns true if succeeded
@@ -319,16 +327,19 @@ public class Map {
     //modified version of Kruskal's algorithm.
     //instead of checking for cycles, checks for reduntant connections.
     //doesn't lead to optimal solution, but strictly dominates plain old kruskal's algorithm (I think)
-    private HashMap<Village, HashSet<Village>> generateConnections(HashSet<Road> addedRoads){
+    private HashMap<Village, HashSet<Village>> generateConnections(){
         HashMap<Village, HashSet<Village>> connections = new HashMap<Village, HashSet<Village>>();
         for(int i=0;i<villages.getSize(); i++){
             if(villages.get(i)!=null){
                 connections.put(villages.get(i), new HashSet<Village>());
             }
         }
+
+        //gets connections for every village
         for(Village village:connections.keySet()){
             HashSet<Village> villagesReached=new HashSet<Village>();
             villagesReached.add(village);
+            //Queue, but don't feel like creating Queue interface
             LinkedList<Road> toTravel=new LinkedList<Road> ();
 
             for(int i=0;i<village.getRoadsOut().getSize();i++){
@@ -341,17 +352,20 @@ public class Map {
                 Road road=toTravel.qPop();
                 Village curVillage=this.getVillage(road.getToID());
 
+                //if curVillage has not been reached yet, add to villagesReached
                 if(!villagesReached.contains(curVillage)){
                     //if curVillage can reach a village, then root village can reach that village
                     for(Object obj:connections.get(curVillage)){
                         Village reachableVillage=(Village)obj;
                         villagesReached.add(reachableVillage);
                     }
-                }
+                    villagesReached.add(curVillage);
 
-                for(int i=0;i<curVillage.getRoadsOut().getSize();i++){
-                    if(curVillage.getRoadsOut().get(i)!=null){
-                        toTravel.qPush(curVillage.getRoadsOut().get(i));
+                    //adds all outgoing roads to queue
+                    for(int i=0;i<curVillage.getRoadsOut().getSize();i++){
+                        if(curVillage.getRoadsOut().get(i)!=null){
+                            toTravel.qPush(curVillage.getRoadsOut().get(i));
+                        }
                     }
                 }
             }
@@ -366,15 +380,16 @@ public class Map {
     public HashSet<Road> chooseNewRoads(Road[] newRoads){
         java.util.Arrays.sort(newRoads);
         HashSet<Road> addedRoads=new HashSet<Road>();
-        HashMap<Village, HashSet<Village>> connections=generateConnections(addedRoads);
+        HashMap<Village, HashSet<Village>> connections=generateConnections();
         for(Road road:newRoads){
             if(road==null) continue;
-            
+
             Village from=this.getVillage(road.getFromID());
             Village to=this.getVillage(road.getToID());
             if(!connections.get(from).contains(to)){
                 addedRoads.add(road);
-                connections=generateConnections(addedRoads);
+                this.addRoad(road);
+                connections=generateConnections();
             }
         }
         return addedRoads;
